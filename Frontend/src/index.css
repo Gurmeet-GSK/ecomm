@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+@theme {
+  --font-logo: "Plus Jakarta Sans", sans-serif;
+  --font-lobster: "Lobster Two", sans-serif;
+}
+
+.logo {
+  font-family: var(--font-lobster);
+  font-weight: 500;
+  font-style: normal;
+  color: black;
+}
+
+.text-primary-color {
+  color: #00927c;
+}
+
+.bg-primary-color {
+  background-color: #00927c;
+}
+
