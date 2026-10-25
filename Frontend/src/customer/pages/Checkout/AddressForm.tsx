@@ -14,6 +14,8 @@ import { Close } from "@mui/icons-material";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { teal } from "@mui/material/colors";
+import { useAppDispatch } from "../../../State/Store";
+import { createOrder } from "../../../State/customer/orderSlice";
 
 export interface Address {
     id: string;
@@ -29,7 +31,7 @@ export interface Address {
 }
 
 // 4. Address Form Validation Schema (corrected pinCode to 6 digits)
-export const AddressFormSchema = Yup.object().shape({
+const AddressFormSchema = Yup.object().shape({
     name: Yup.string()
         .trim()
         .min(2, "Name must be at least 2 characters")
@@ -57,16 +59,23 @@ export const AddressFormSchema = Yup.object().shape({
         .required("State is required"),
 });
 
-interface AddressFormProps {
-    open: boolean;
-    onClose: () => void;
-    onAddAddress: (address: Address) => void;
+export interface AddressFormProps {
+    open?: boolean;
+    onClose?: () => void;
+    onAddAddress?: (address: Address) => void;
+    paymentGateway?: any;
 }
 
-const AddressForm: React.FC<AddressFormProps> = ({ open, onClose, onAddAddress }) => {
+const AddressForm = ({
+    paymentGateway,
+    open = true,
+    onClose,
+    onAddAddress,
+}: AddressFormProps) => {
     const [addressType, setAddressType] = React.useState<"HOME" | "WORK" | "OTHER">("HOME");
-
+    const dispatch = useAppDispatch();
     const formik = useFormik({
+        enableReinitialize: true,
         initialValues: {
             name: "",
             mobile: "",
@@ -78,6 +87,16 @@ const AddressForm: React.FC<AddressFormProps> = ({ open, onClose, onAddAddress }
         },
         validationSchema: AddressFormSchema,
         onSubmit: (values, { resetForm }) => {
+            // Submit form
+            console.log(values);
+            dispatch(
+                createOrder({
+                    address: values,
+                    jwt: localStorage.getItem("jwt") || "",
+                    paymentGateway,
+                })
+            );
+
             const newAddress: Address = {
                 id: Date.now().toString(),
                 name: values.name.trim(),
@@ -91,15 +110,21 @@ const AddressForm: React.FC<AddressFormProps> = ({ open, onClose, onAddAddress }
                 isDefault: false,
             };
 
-            onAddAddress(newAddress);
+            if (onAddAddress) {
+                onAddAddress(newAddress);
+            }
             resetForm();
-            onClose();
+            if (onClose) {
+                onClose();
+            }
         },
     });
 
     const handleDialogClose = () => {
         formik.resetForm();
-        onClose();
+        if (onClose) {
+            onClose();
+        }
     };
 
     return (

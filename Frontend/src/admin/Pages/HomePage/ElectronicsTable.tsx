@@ -1,11 +1,15 @@
-import HomeCategoryTable from "./HomeCategoryTable";
+import React from 'react';
+import HomeCategoryTable from './HomeCategoryTable';
+import { useAppSelector } from '../../../State/Store';
 
-const ElectronicsTable =() =>{
-    return(
+const ElectronicsTable = () => {
+    const { customer } = useAppSelector((store) => store);
+
+    return (
         <div>
-           <HomeCategoryTable/>
+            <HomeCategoryTable data={customer.homePageData?.electricCategories || []} />
         </div>
-    )
-}
+    );
+};
 
-export default ElectronicsTable;    
+export default ElectronicsTable;

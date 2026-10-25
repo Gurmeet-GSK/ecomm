@@ -1,6 +1,8 @@
 import React from "react";
 import { Divider } from "@mui/material";
 import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "../../../State/Store";
+import { fetchUserProfile, logout } from "../../../State/AuthSlice";
 import Orders from "./Orders";
 import OrderDetails from "./OrderDetails";
 import Profile from "./Profile";
@@ -18,11 +20,20 @@ const menu = [
 const Account: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
+    const dispatch = useAppDispatch();
+    const { user } = useAppSelector((store) => store.auth);
+
+    React.useEffect(() => {
+        const token = localStorage.getItem("jwt");
+        if (token && !user) {
+            dispatch(fetchUserProfile({ jwt: token }));
+        }
+    }, [dispatch, user]);
 
     const handleClick = (item: { name: string; path: string }) => {
         if (item.name === "Logout") {
             if (window.confirm("Are you sure you want to log out?")) {
-                navigate("/");
+                dispatch(logout(navigate));
             }
             return;
         }
@@ -32,10 +43,10 @@ const Account: React.FC = () => {
 
     return (
         <div className="px-5 lg:px-52 min-h-screen mt-8 pb-20">
-            {/* Top User Header matching Screenshot 1 */}
+            {/* Top User Header */}
             <div>
                 <h1 className="text-xl font-bold pb-5 text-gray-900 tracking-tight">
-                    Ashok
+                    {user?.fullName || "My Account"}
                 </h1>
             </div>
             <Divider />

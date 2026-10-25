@@ -1,3 +1,4 @@
+import React from 'react';
 import { styled } from '@mui/material/styles';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -8,6 +9,7 @@ import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 import { Button } from '@mui/material';
 import { Edit } from '@mui/icons-material';
+import type { HomeCategory } from '../../../types/HomeCategoryType';
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   [`&.${tableCellClasses.head}`]: {
@@ -29,53 +31,51 @@ const StyledTableRow = styled(TableRow)(({ theme }) => ({
   },
 }));
 
-function createData(
-  name: string,
-  calories: number,
-  fat: number,
-  carbs: number,
-  protein: number,
-) {
-  return { name, calories, fat, carbs, protein };
-}
-
-const rows = [
-  createData('Frozen yoghurt', 159, 6.0, 24, 4.0),
-  createData('Ice cream sandwich', 237, 9.0, 37, 4.3),
-  createData('Eclair', 262, 16.0, 24, 6.0),
-  createData('Cupcake', 305, 3.7, 67, 4.3),
-  createData('Gingerbread', 356, 16.0, 49, 3.9),
-];
-
-export default function HomeCategoryTable() {
+export default function HomeCategoryTable({ data }: { data?: HomeCategory[] }) {
   return (
     <TableContainer component={Paper}>
       <Table sx={{ minWidth: 700 }} aria-label="customized table">
         <TableHead>
           <TableRow>
-            <StyledTableCell>S.No.</StyledTableCell>
-            <StyledTableCell> ID</StyledTableCell>
+            <StyledTableCell>No</StyledTableCell>
+            <StyledTableCell>Id</StyledTableCell>
             <StyledTableCell>Image</StyledTableCell>
             <StyledTableCell align="right">Category</StyledTableCell>
             <StyledTableCell align="right">Update</StyledTableCell>
-            </TableRow>
+          </TableRow>
         </TableHead>
         <TableBody>
-          {rows.map((row) => (
-            <StyledTableRow key={row.name}>
-              <StyledTableCell component="th" scope="row">
-                {row.name}
+          {data && data.length > 0 ? (
+            data.map((category: HomeCategory, index: number) => (
+              <StyledTableRow key={category.id || index}>
+                <StyledTableCell component="th" scope="row">
+                  {index + 1}
+                </StyledTableCell>
+                <StyledTableCell>{category.id || index + 1}</StyledTableCell>
+                <StyledTableCell>
+                  <img
+                    className="w-20 rounded-md object-cover h-14"
+                    src={category.image}
+                    alt={category.name}
+                  />
+                </StyledTableCell>
+                <StyledTableCell align="right">
+                  {category.categoryId}
+                </StyledTableCell>
+                <StyledTableCell align="right">
+                  <Button variant="contained" color="primary" size="small">
+                    <Edit fontSize="small" />
+                  </Button>
+                </StyledTableCell>
+              </StyledTableRow>
+            ))
+          ) : (
+            <StyledTableRow>
+              <StyledTableCell colSpan={5} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                No categories found
               </StyledTableCell>
-              <StyledTableCell >{row.calories}</StyledTableCell>
-              <StyledTableCell >{row.fat}</StyledTableCell>
-              <StyledTableCell align="right">{row.carbs}</StyledTableCell>
-              <StyledTableCell align="right">
-                   <Button variant="contained" color="primary">
-                     <Edit/>
-                   </Button>
-              </StyledTableCell>              
             </StyledTableRow>
-          ))}
+          )}
         </TableBody>
       </Table>
     </TableContainer>

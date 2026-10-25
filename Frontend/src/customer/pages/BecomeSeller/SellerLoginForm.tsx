@@ -13,7 +13,6 @@ interface SellerLoginFormProps {
 
 const SellerLoginForm: React.FC<SellerLoginFormProps> = ({ onToggleRegister }) => {
     const [loginWithOtp, setLoginWithOtp] = useState(true);
-    const [localOtpSent, setLocalOtpSent] = useState(false);
     const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
     const dispatch = useAppDispatch();
@@ -88,7 +87,6 @@ const SellerLoginForm: React.FC<SellerLoginFormProps> = ({ onToggleRegister }) =
             ).unwrap();
 
             console.log("OTP Sent Result: ", res);
-            setLocalOtpSent(true);
             setStatusMessage({
                 type: "success",
                 text: `OTP sent successfully to ${formik.values.email}! Please check your inbox.`,

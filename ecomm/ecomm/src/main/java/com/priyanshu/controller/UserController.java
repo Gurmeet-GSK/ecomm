@@ -15,11 +15,12 @@ public class UserController {
     private final UserService userService;
     private final JwtProvider jwtProvider;
 
-    @GetMapping("/users/profile")
-    public ResponseEntity<User> createdUserHandler(@RequestHeader("Authorization") String jwt) throws Exception {
-
+    @GetMapping("/api/users/profile")
+    public ResponseEntity<User> getUserProfileHandler(@RequestHeader("Authorization") String jwt) throws Exception {
+        System.out.println("user profile handler reached");
+        System.out.println("user profile handler jwt: " + jwt);
         User user = userService.findUserByJwtToken(jwt);
-
+        System.out.println("user profile handler user: " + user);
         return ResponseEntity.ok(user);
     }
 }

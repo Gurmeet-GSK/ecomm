@@ -2,6 +2,7 @@ import { useState } from "react";
 import Avatar from "@mui/material/Avatar";
 import Button from "@mui/material/Button";
 import IconButton from "@mui/material/IconButton";
+import Badge from "@mui/material/Badge";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
 import SearchIcon from "@mui/icons-material/Search";
@@ -11,6 +12,7 @@ import StorefrontOutlinedIcon from "@mui/icons-material/StorefrontOutlined";
 import { AccountCircleRounded } from "@mui/icons-material";
 import CategorySheet from "./CategorySheet";
 import { useNavigate } from "react-router-dom";
+import { useAppSelector } from "../../../State/Store";
 
 const TEAL = "#00897b";
 const TEAL_DARK = "#00695c";
@@ -29,9 +31,9 @@ const Navbar = () => {
   const [selectedCategory, setSelectedCategory] = useState("men");
   const navigate = useNavigate()
 
-  // Change this to false to see the Login button.
-  // Later, replace it with your real auth state.
-  const isLoggedIn = true;
+  const auth = useAppSelector((state) => state.auth);
+  const { wishlist } = useAppSelector((state) => state.wishlist);
+  const isLoggedIn = auth.isLoggedIn;
   const isLarge = true;
 
   return (
@@ -107,10 +109,13 @@ const Navbar = () => {
                 sx={{ width: 29, height: 29 }}
                 src="https://i.pinimg.com/474x/23/7b/ef/237bef165970536a461db1b78fb3d1a9.jpg"
               />
-              <span className="hidden font-semibold lg:block">Mason</span>
+              <span className="hidden font-semibold lg:block">
+                {auth.user?.fullName?.split(" ")[0] || "Account"}
+              </span>
             </Button>
           ) : (
             <Button
+              onClick={() => navigate("/login")}
               variant="contained"
               startIcon={<AccountCircleRounded />}
               sx={{
@@ -123,8 +128,10 @@ const Navbar = () => {
             </Button>
           )}
 
-          <IconButton onClick={()=>navigate("favorites")} aria-label="Wishlist">
-            <FavoriteBorderIcon />
+          <IconButton onClick={()=>navigate("/wishlist")} aria-label="Wishlist">
+            <Badge badgeContent={wishlist?.products?.length || 0} color="error">
+              <FavoriteBorderIcon />
+            </Badge>
           </IconButton>
 
           <IconButton onClick={()=>navigate("/cart")} aria-label="Cart">

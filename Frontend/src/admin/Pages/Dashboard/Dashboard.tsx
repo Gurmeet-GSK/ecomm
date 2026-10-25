@@ -1,8 +1,16 @@
+import React, { useEffect } from "react";
 import AdminDrawerList from "../../components/AdminDrawerList";
 import AdminRoutes from "../../../Routes/AdminRoutes";
+import { useAppDispatch } from "../../../State/Store";
+import { fetchHomeCategories } from "../../../State/admin/adminSlice";
 
-function AdminDashboard() {
+const AdminDashboard = () => {
     const toggleDrawer = () => { };
+    const dispatch = useAppDispatch();
+
+    useEffect(() => {
+        dispatch(fetchHomeCategories());
+    }, [dispatch]);
 
     return (
         <div>
@@ -16,7 +24,6 @@ function AdminDashboard() {
             </div>
         </div>
     );
+};
 
-}
-
-export default AdminDashboard;   
+export default AdminDashboard;

@@ -11,7 +11,7 @@ export interface StepItem {
     value: string;
 }
 
-export const steps: StepItem[] = [
+const steps: StepItem[] = [
     { name: "Order Placed", description: "on Thu, 11 Jul", value: "PLACED" },
     { name: "Packed", description: "Item Packed in Dispatch Warehouse", value: "CONFIRMED" },
     { name: "Shipped", description: "by Mon, 15 Jul", value: "SHIPPED" },
@@ -19,7 +19,7 @@ export const steps: StepItem[] = [
     { name: "Order Delivered", description: "by 16 Jul - 18 Jul", value: "DELIVERED" },
 ];
 
-export const canceledStep: StepItem[] = [
+const canceledStep: StepItem[] = [
     { name: "Order Placed", description: "on Thu, 11 Jul", value: "PLACED" },
     { name: "Order Canceled", description: "on Thu, 11 Jul", value: "CANCELLED" },
 ];

@@ -17,6 +17,8 @@ import { teal } from "@mui/material/colors";
 import AddressForm from "./AddressForm";
 import type { Address } from "./AddressForm";
 import PricingCard from "../Cart/PricingCard";
+import { useAppDispatch } from "../../../State/Store";
+import { createOrder } from "../../../State/customer/orderSlice";
 
 interface AddressDetailProps {
     onCheckoutSuccess?: (orderData: { address: Address; gateway: string }) => void;
@@ -79,6 +81,7 @@ const AddressDetail: React.FC<AddressDetailProps> = ({ onCheckoutSuccess }) => {
         }
     };
 
+    const dispatch = useAppDispatch();
     const selectedAddress = addresses.find((a) => a.id === selectedAddressId) || addresses[0];
 
     const handleCheckout = () => {
@@ -86,15 +89,21 @@ const AddressDetail: React.FC<AddressDetailProps> = ({ onCheckoutSuccess }) => {
             alert("Please select or add a delivery address.");
             return;
         }
+
+        const jwt = localStorage.getItem("jwt") || "false";
+        dispatch(
+            createOrder({
+                address: selectedAddress,
+                jwt,
+                paymentGateway: paymentGateway.toUpperCase(),
+            })
+        );
+
         if (onCheckoutSuccess) {
             onCheckoutSuccess({
                 address: selectedAddress,
                 gateway: paymentGateway,
             });
-        } else {
-            alert(
-                `Order confirmed!\nDelivering to: ${selectedAddress.name} (${selectedAddress.city})\nPayment via: ${paymentGateway.toUpperCase()}`
-            );
         }
     };
 
@@ -388,6 +397,7 @@ const AddressDetail: React.FC<AddressDetailProps> = ({ onCheckoutSuccess }) => {
                 open={isAddressModalOpen}
                 onClose={() => setIsAddressModalOpen(false)}
                 onAddAddress={handleAddAddress}
+                paymentGateway={paymentGateway.toUpperCase()}
             />
         </div>
     );

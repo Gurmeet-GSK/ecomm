@@ -28,6 +28,8 @@ import { menLevelThree } from "../../../data/category/levelThree/menLevelThree";
 import { womenLevelThree } from "../../../data/category/levelThree/womenLevelThree";
 import { electronicsLevelThree } from "../../../data/category/levelThree/electronicsLevelThree";
 import { furnitureLevelThree } from "../../../data/category/levelThree/furnitureLevelThree";
+import { useAppDispatch } from "../../../State/Store";
+import { createProduct } from "../../../State/seller/sellerProductSlice";
 
 const categoryTwoMap: Record<string, any[]> = {
     men: menLevelTwo,
@@ -74,6 +76,15 @@ const AddProduct = () => {
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState("");
     const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">("success");
+    const dispatch = useAppDispatch();
+    // TODO: Connect editProduct once edit product feature is implemented
+    // const { editProduct } = useAppSelector(store => store.sellerProduct);
+    // useEffect(() => {
+    //     if (editProduct) {
+    //         formik.setValues(editProduct);
+    //     }
+    // }, [editProduct]);
+    
 
     const formik = useFormik({
         initialValues: {
@@ -94,6 +105,8 @@ const AddProduct = () => {
             setSnackbarSeverity("success");
             setSnackbarMessage("Product created successfully!");
             setSnackbarOpen(true);
+            dispatch(createProduct({request:values, jwt:localStorage.getItem("jwt") || ""}));
+
         },
     });
 

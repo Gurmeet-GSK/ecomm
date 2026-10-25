@@ -1,5 +1,7 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Divider, ListItemIcon, ListItemText } from '@mui/material';
+import { useAppDispatch } from '../State/Store';
+import { logout } from '../State/AuthSlice';
 
 interface menuItem {
     name: string;
@@ -17,7 +19,11 @@ interface DrawerListProp {
 const DrawerList = ({ menu, menu2, toggleDrawer }: DrawerListProp) => {
     const location = useLocation();
     const navigate = useNavigate();
+    const dispatch = useAppDispatch();
 
+    const handleLogout = () => {
+        dispatch(logout(navigate));
+    };
     const handleClick = (path: string) => {
         navigate(path);
         if (toggleDrawer) {
@@ -62,7 +68,15 @@ const DrawerList = ({ menu, menu2, toggleDrawer }: DrawerListProp) => {
                             <div
                                 className="pr-9 cursor-pointer"
                                 key={index}
-                                onClick={() => handleClick(item.path)}
+                                onClick={() => {
+                                    navigate(item.path);
+                                    if (item.path === "/") {
+                                        handleLogout();
+                                    }
+                                    if (toggleDrawer) {
+                                        toggleDrawer();
+                                    }
+                                }}
                             >
                                 <div
                                     className={`${

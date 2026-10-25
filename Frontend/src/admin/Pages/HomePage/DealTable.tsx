@@ -1,3 +1,4 @@
+import React from 'react';
 import { styled } from '@mui/material/styles';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -8,6 +9,9 @@ import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 import { Button, IconButton } from '@mui/material';
 import { Edit, Delete } from '@mui/icons-material';
+import { useAppDispatch, useAppSelector } from '../../../State/Store';
+import { deleteDeal, getAllDeals } from '../../../State/admin/DealSlice';
+import type { Deal } from '../../../types/dealTypes';
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   [`&.${tableCellClasses.head}`]: {
@@ -28,24 +32,33 @@ const StyledTableRow = styled(TableRow)(({ theme }) => ({
   },
 }));
 
-function createData(
-  no: number,
-  image: string,
-  category: string,
-  discount: number,
-) {
-  return { no, image, category, discount };
-}
-
-const rows = [
-  createData(1, 'https://images.unsplash.com/photo-1523275335684-37898b6baf30', 'Smart Watches', 20),
-  createData(2, 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e', 'Headphones', 30),
-  createData(3, 'https://images.unsplash.com/photo-1542291026-7eec264c27ff', 'Footwear', 15),
-  createData(4, 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f', 'Cameras', 25),
-  createData(5, 'https://images.unsplash.com/photo-1583394838336-acd977736f90', 'Gaming', 10),
-];
-
 export default function DealTable() {
+  const dispatch = useAppDispatch();
+  const { deal, customer } = useAppSelector((store) => store);
+
+  React.useEffect(() => {
+    dispatch(getAllDeals());
+  }, [dispatch]);
+
+  // Fallback to customer.homePageData?.deals if deal.deals is empty
+  const deals: Deal[] =
+    deal.deals && deal.deals.length > 0
+      ? deal.deals
+      : (customer.homePageData?.deals as Deal[]) || [];
+
+  const handleUpdate = (dealId?: number) => {
+    if (dealId !== undefined) {
+      // Future update modal or action trigger
+      console.log("Update deal with id:", dealId);
+    }
+  };
+
+  const handleDelete = (dealId?: number) => {
+    if (dealId !== undefined) {
+      dispatch(deleteDeal(dealId));
+    }
+  };
+
   return (
     <TableContainer component={Paper}>
       <Table sx={{ minWidth: 700 }} aria-label="deal table">
@@ -60,32 +73,54 @@ export default function DealTable() {
           </TableRow>
         </TableHead>
         <TableBody>
-          {rows.map((row) => (
-            <StyledTableRow key={row.no}>
-              <StyledTableCell component="th" scope="row">
-                {row.no}
-              </StyledTableCell>
-              <StyledTableCell>
-                <img
-                  src={row.image}
-                  alt={row.category}
-                  className="w-16 h-16 object-cover rounded-md"
-                />
-              </StyledTableCell>
-              <StyledTableCell>{row.category}</StyledTableCell>
-              <StyledTableCell align="right">{row.discount}%</StyledTableCell>
-              <StyledTableCell align="right">
-                <Button variant="contained" color="primary">
-                  <Edit />
-                </Button>
-              </StyledTableCell>
-              <StyledTableCell align="right">
-                <IconButton sx={{ color: "red" }}>
-                  <Delete />
-                </IconButton>
+          {deals.length > 0 ? (
+            deals.map((item: Deal, index: number) => (
+              <StyledTableRow key={item.id ?? index}>
+                <StyledTableCell component="th" scope="row">
+                  {index + 1}
+                </StyledTableCell>
+                <StyledTableCell>
+                  <img
+                    src={item.category?.image}
+                    alt={item.category?.name || "Deal Category"}
+                    className="w-16 h-16 object-cover rounded-md"
+                  />
+                </StyledTableCell>
+                <StyledTableCell>
+                  {item.category?.name || item.category?.categoryId || "N/A"}
+                </StyledTableCell>
+                <StyledTableCell align="right">{item.discount}%</StyledTableCell>
+                <StyledTableCell align="right">
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    size="small"
+                    onClick={() => handleUpdate(item.id)}
+                  >
+                    <Edit fontSize="small" />
+                  </Button>
+                </StyledTableCell>
+                <StyledTableCell align="right">
+                  <IconButton
+                    sx={{ color: "red" }}
+                    onClick={() => handleDelete(item.id)}
+                  >
+                    <Delete fontSize="small" />
+                  </IconButton>
+                </StyledTableCell>
+              </StyledTableRow>
+            ))
+          ) : (
+            <StyledTableRow>
+              <StyledTableCell
+                colSpan={6}
+                align="center"
+                sx={{ py: 4, color: "text.secondary" }}
+              >
+                No deals available
               </StyledTableCell>
             </StyledTableRow>
-          ))}
+          )}
         </TableBody>
       </Table>
     </TableContainer>

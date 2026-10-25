@@ -15,6 +15,13 @@ public class DealController {
 
     private final DealService dealService;
 
+    @GetMapping
+    public ResponseEntity<java.util.List<Deal>> getDeals() {
+        java.util.List<Deal> deals = dealService.getDeals();
+        return new ResponseEntity<>(deals, HttpStatus.OK);
+    }
+
+
     @PostMapping
     public ResponseEntity<Deal> createDeal(@RequestBody Deal deals) {
         Deal createDeals = dealService.createDeal(deals);

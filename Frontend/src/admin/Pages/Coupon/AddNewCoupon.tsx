@@ -3,6 +3,9 @@ import { useFormik } from "formik";
 import { Box, Button, Grid, TextField } from "@mui/material";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { useAppDispatch } from "../../../State/Store";
+import { createCoupon } from "../../../State/customer/couponSlice";
+import { useNavigate } from "react-router-dom";
 
 interface CouponFormValues {
     code: string;
@@ -13,6 +16,9 @@ interface CouponFormValues {
 }
 
 const AddNewCoupon = () => {
+    const dispatch = useAppDispatch();
+    const navigate = useNavigate();
+
     const formik = useFormik<CouponFormValues>({
         initialValues: {
             code: "",
@@ -21,13 +27,20 @@ const AddNewCoupon = () => {
             validityEndDate: null,
             minimumOrderValue: 0,
         },
-        onSubmit: (values) => {
-            const formatedValues = {
-                ...values,
-                validityStartDate: values.validityStartDate?.toISOString(),
-                validityEndDate: values.validityEndDate?.toISOString(),
+        onSubmit: async (values) => {
+            const formattedValues = {
+                code: values.code,
+                discountPercentage: values.discountPercentage,
+                validityStartDate: values.validityStartDate?.format("YYYY-MM-DD") || "",
+                validityEndDate: values.validityEndDate?.format("YYYY-MM-DD") || "",
+                minimumOrderValue: values.minimumOrderValue,
+                active: true,
             };
-            console.log("form submitted", values, formatedValues);
+            const jwt = localStorage.getItem("jwt") || "";
+            if (jwt) {
+                await dispatch(createCoupon({ coupon: formattedValues, jwt }));
+                navigate("/admin/coupon");
+            }
         },
     });
 

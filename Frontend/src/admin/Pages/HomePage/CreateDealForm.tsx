@@ -1,6 +1,7 @@
 import { Box, Button, FormControl, InputLabel, MenuItem, Select, TextField, Typography } from "@mui/material";
 import { useFormik } from "formik";
-import { mainCategory } from "../../../data/category/mainCategory";
+import { useAppDispatch, useAppSelector } from "../../../State/Store";
+import { createDeal } from "../../../State/admin/DealSlice";
 
 interface DealFormValues {
     discount: number;
@@ -8,6 +9,9 @@ interface DealFormValues {
 }
 
 const CreateDealForm = () => {
+    const dispatch = useAppDispatch();
+    const { customer } = useAppSelector((store) => store);
+
     const formik = useFormik<DealFormValues>({
         initialValues: {
             discount: 0,
@@ -15,6 +19,13 @@ const CreateDealForm = () => {
         },
         onSubmit: (values) => {
             console.log("submit ", values);
+            const reqData = {
+                discount: values.discount,
+                category: {
+                    id: values.category,
+                },
+            };
+            dispatch(createDeal(reqData));
         },
     });
 
@@ -41,17 +52,16 @@ const CreateDealForm = () => {
 
             <Box sx={{ minWidth: 120 }}>
                 <FormControl fullWidth>
-                    <InputLabel id="category-select-label">Category</InputLabel>
+                    <InputLabel id="demo-simple-select-label">Category</InputLabel>
                     <Select
-                        labelId="category-select-label"
-                        id="category-select"
-                        name="category"
+                        labelId="demo-simple-select-label"
+                        id="demo-simple-select"
                         value={formik.values.category}
                         label="Category"
                         onChange={formik.handleChange}
                     >
-                        {mainCategory.map((item, index) => (
-                            <MenuItem key={index} value={item.categoryId}>
+                        {customer.homePageData?.dealCategories.map((item) => (
+                            <MenuItem key={item.id} value={item.id}>
                                 {item.name}
                             </MenuItem>
                         ))}
@@ -61,12 +71,11 @@ const CreateDealForm = () => {
 
             <Button
                 fullWidth
-                variant="contained"
-                color="primary"
+                sx={{ py: ".9rem" }}
                 type="submit"
-                sx={{ py: "14px" }}
+                variant="contained"
             >
-                CREATE DEAL
+                create deal
             </Button>
         </Box>
     );

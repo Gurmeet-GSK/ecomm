@@ -1,12 +1,27 @@
-import "../ShopByCategory/ShopByCategory.css"
+import React from 'react';
+import './ShopByCategory.css';
+import type { HomeCategory } from '../../../../types/HomeCategoryType';
+import { useNavigate } from 'react-router-dom';
 
-const ShopByCategoryCard = () => {
+const ShopByCategoryCard = ({ item }: { item: HomeCategory }) => {
+    const navigate = useNavigate();
+
     return (
-        <div className=" flex gap-3 flex-col justify-center items-center group cursor-pointer">
-            <div className="custom-border w-[150px] h-[150px] lg:w-[249px] lg:h-[249px] bg-primary-color rounded-full">
-                <img className="rounded-full group-hover:scale-95 tansiotion-transform transform-duration-700 object-cover object-top h-full w-full" src="https://i.pinimg.com/736x/ca/8a/4a/ca8a4ad30f698a6594555e6fcbe0ebfd.jpg" alt="" />
+        <div
+            onClick={() => navigate(`/products/${item.categoryId}`)}
+            className="flex gap-3 flex-col justify-center items-center group cursor-pointer"
+        >
+            <div className="custom-border w-37.5 h-37.5 lg:w-62 lg:h-62 rounded-full bg-primary-color p-0.5 transition-transform duration-500 group-hover:scale-105">
+                <img
+                    className="rounded-full group-hover:scale-95 transition-transform duration-700 object-cover object-top h-full w-full"
+                    src={item.image}
+                    alt={item.name}
+                    loading="lazy"
+                />
             </div>
-            <h1>Electronics</h1>
+            <h1 className="font-semibold text-sm lg:text-base text-gray-800 group-hover:text-teal-700 transition-colors text-center capitalize">
+                {item.name}
+            </h1>
         </div>
     );
 };

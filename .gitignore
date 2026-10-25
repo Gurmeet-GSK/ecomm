@@ -48,3 +48,12 @@ build/
 .settings
 .springBeans
 .sts4-cache
+
+# AI Agent Skills, Customizations & Rules
+.agents/
+.agent/
+_agents/
+_agent/
+GEMINI.md
+AGENTS.md
+

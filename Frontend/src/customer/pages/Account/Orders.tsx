@@ -1,76 +1,42 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import OrderItem from "./OrderItem";
-import { SAMPLE_ORDERS, type Order } from "./orderTypes";
+import React, { useEffect } from "react";
+import OrderItemCard from "./OrderItemCard";
+import { useAppDispatch, useAppSelector } from "../../../State/Store";
+import { fetchUserOrderHistory } from "../../../State/customer/orderSlice";
 
-interface OrdersProps {
-    onSelectOrder?: (order: Order) => void;
-}
+const Orders = () => {
+    const dispatch = useAppDispatch();
+    const { orders, loading } = useAppSelector((store) => store.order);
 
-const Orders: React.FC<OrdersProps> = ({ onSelectOrder }) => {
-    const navigate = useNavigate();
-    const [orders] = useState<Order[]>(SAMPLE_ORDERS);
-    const [filterStatus, setFilterStatus] = useState<string>("ALL");
-
-    const filteredOrders = orders.filter((order) => {
-        if (filterStatus === "ALL") return true;
-        if (filterStatus === "SHIPPED") return order.orderStatus === "SHIPPED" || order.orderStatus === "ARRIVING";
-        if (filterStatus === "DELIVERED") return order.orderStatus === "DELIVERED";
-        if (filterStatus === "CANCELLED") return order.orderStatus === "CANCELLED";
-        return true;
-    });
-
-    const handleOrderClick = (order: Order) => {
-        if (onSelectOrder) {
-            onSelectOrder(order);
-        } else {
-            navigate(`/account/order/${order.orderId}/${order.orderItem.id}`);
+    useEffect(() => {
+        const jwt = localStorage.getItem("jwt");
+        if (jwt) {
+            dispatch(fetchUserOrderHistory(jwt));
         }
-    };
+    }, [dispatch]);
 
     return (
-        <div className="space-y-5">
-            {/* Header matching Screenshot 2 */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-gray-100">
-                <div>
-                    <h2 className="text-xl font-bold text-gray-900 tracking-tight">
-                        All orders
-                    </h2>
-                    <p className="text-xs text-gray-500 mt-0.5">from anytime</p>
-                </div>
-
-                {/* Filter Pills */}
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-                    {["ALL", "SHIPPED", "DELIVERED", "CANCELLED"].map((status) => (
-                        <button
-                            key={status}
-                            onClick={() => setFilterStatus(status)}
-                            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all whitespace-nowrap ${
-                                filterStatus === status
-                                    ? "bg-teal-600 text-white shadow-xs"
-                                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                            }`}
-                        >
-                            {status === "ALL" ? "All Orders" : status.charAt(0) + status.slice(1).toLowerCase()}
-                        </button>
-                    ))}
-                </div>
+        <div className="text-sm min-h-screen">
+            <div className="pb-5">
+                <h1 className="font-semibold text-lg">All orders</h1>
+                <p className="text-gray-500">from anytime</p>
             </div>
 
-            {/* Orders List */}
-            {filteredOrders.length === 0 ? (
-                <div className="text-center py-12 border border-dashed border-gray-200 rounded-xl">
-                    <p className="text-gray-500 text-sm">No orders found matching this filter.</p>
+            {loading ? (
+                <div className="py-12 flex justify-center items-center text-gray-500">
+                    Loading your orders...
+                </div>
+            ) : orders && orders.length > 0 ? (
+                <div className="space-y-2">
+                    {orders.map((order) =>
+                        order.orderItems?.map((item) => (
+                            <OrderItemCard key={item.id} item={item} order={order} />
+                        ))
+                    )}
                 </div>
             ) : (
-                <div className="space-y-4">
-                    {filteredOrders.map((order) => (
-                        <OrderItem
-                            key={order.id}
-                            order={order}
-                            onClick={handleOrderClick}
-                        />
-                    ))}
+                <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-lg p-8">
+                    <p className="text-base font-medium">No orders found</p>
+                    <p className="text-xs text-gray-400 mt-1">You haven't placed any orders yet.</p>
                 </div>
             )}
         </div>

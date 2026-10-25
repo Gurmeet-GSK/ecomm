@@ -26,8 +26,8 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class PaymentServiceImpl implements PaymentService {
 
-    private PaymentOrderRepository paymentOrderRepository;
-    private OrderRepository orderRepository;
+    private final PaymentOrderRepository paymentOrderRepository;
+    private final OrderRepository orderRepository;
 
     private String apiKey = " rzp_test_TjiRRDWQjj62oZ";
     private String apiSecret = "REtcLS4ii6E34RO7n8Y40GTU";
@@ -46,30 +46,30 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public PaymentOrder getPaymentOrderById(Long orderId) throws Exception {
-        return paymentOrderRepository.findById(orderId).orElseThrow(()->
-                new Exception("Payment order not found"));
+        return paymentOrderRepository.findById(orderId).orElseThrow(() -> new Exception("Payment order not found"));
     }
 
     @Override
     public PaymentOrder getPaymentOrderByPaymentId(String orderId) throws Exception {
         PaymentOrder paymentOrder = paymentOrderRepository.findByPaymentLinkId(orderId);
-        if(paymentOrder == null){
+        if (paymentOrder == null) {
             throw new Exception("Payment order not found with provided payment link id");
         }
         return paymentOrder;
     }
 
     @Override
-    public Boolean ProceedPaymentOrder(PaymentOrder paymentOrder, String paymentId, String paymentLinkId) throws RazorpayException {
-        if(paymentOrder.getStatus().equals(PaymentOrderStatus.PENDING)){
+    public Boolean ProceedPaymentOrder(PaymentOrder paymentOrder, String paymentId, String paymentLinkId)
+            throws RazorpayException {
+        if (paymentOrder.getStatus().equals(PaymentOrderStatus.PENDING)) {
             RazorpayClient razorpay = new RazorpayClient(apiKey, apiSecret);
 
             Payment payment = razorpay.payments.fetch(paymentId);
 
             String status = payment.get("status");
-            if(status.equals("captured")){
+            if (status.equals("captured")) {
                 Set<Order> orders = paymentOrder.getOrders();
-                for(Order order : orders){
+                for (Order order : orders) {
                     order.setPaymentStatus(PaymentStatus.COMPLETED);
                     orderRepository.save(order);
                 }
@@ -86,7 +86,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public PaymentLink createRazorpayPaymentLink(User user, Long amount, Long orderId) throws RazorpayException {
-        amount = amount*100;
+        amount = amount * 100;
         try {
             RazorpayClient razorpay = new RazorpayClient(apiKey, apiSecret);
 
@@ -103,7 +103,7 @@ public class PaymentServiceImpl implements PaymentService {
             notify.put("email", true);
             paymentLinkRequest.put("notify", notify);
 
-            paymentLinkRequest.put("callback_url", "http://localhost:3030/payment-success/"+orderId);
+            paymentLinkRequest.put("callback_url", "http://localhost:3030/payment-success/" + orderId);
             paymentLinkRequest.put("callback_method", "get");
 
             PaymentLink paymentLink = razorpay.paymentLink.create(paymentLinkRequest);
@@ -125,21 +125,20 @@ public class PaymentServiceImpl implements PaymentService {
         SessionCreateParams params = SessionCreateParams.builder()
                 .addPaymentMethodType(SessionCreateParams.PaymentMethodType.CARD)
                 .setMode(SessionCreateParams.Mode.PAYMENT)
-                .setSuccessUrl("http://localhost:3030/payment-success/"+orderId)
+                .setSuccessUrl("http://localhost:3030/payment-success/" + orderId)
                 .setCancelUrl("http://localhost:3030/payment-cancel")
                 .addLineItem(SessionCreateParams.LineItem.builder()
                         .setQuantity(1L)
                         .setPriceData(SessionCreateParams.LineItem.PriceData.builder()
                                 .setCurrency("usd")
-                                .setUnitAmount(amount*100)
+                                .setUnitAmount(amount * 100)
                                 .setProductData(
-                                        SessionCreateParams
-                                                .LineItem.PriceData.ProductData
+                                        SessionCreateParams.LineItem.PriceData.ProductData
                                                 .builder().setName("ZenShop payment")
-                                                .build()
-                                ).build()
-                        ).build()
-                ).build();
+                                                .build())
+                                .build())
+                        .build())
+                .build();
 
         Session session = Session.create(params);
         return session.getUrl();

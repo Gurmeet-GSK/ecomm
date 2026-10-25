@@ -6,6 +6,10 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
+import { useAppDispatch, useAppSelector } from '../../../State/Store';
+import { useEffect } from 'react';
+import { fetchTransactionsBySeller } from '../../../State/seller/transactionSlice';
+import type { Transaction } from '../../../types/Transaction';
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   [`&.${tableCellClasses.head}`]: {
@@ -27,25 +31,31 @@ const StyledTableRow = styled(TableRow)(({ theme }) => ({
   },
 }));
 
-function createData(
-  name: string,
-  calories: number,
-  fat: number,
-  carbs: number,
-  protein: number,
-) {
-  return { name, calories, fat, carbs, protein };
-}
-
-const rows = [
-  createData('Frozen yoghurt', 159, 6.0, 24, 4.0),
-  createData('Ice cream sandwich', 237, 9.0, 37, 4.3),
-  createData('Eclair', 262, 16.0, 24, 6.0),
-  createData('Cupcake', 305, 3.7, 67, 4.3),
-  createData('Gingerbread', 356, 16.0, 49, 3.9),
-];
-
 export default function TransactionTable() {
+  const dispatch = useAppDispatch();
+  const { transactions } = useAppSelector((store) => store.transaction);
+
+  useEffect(() => {
+    const jwt = localStorage.getItem("jwt");
+    if (jwt) {
+      dispatch(fetchTransactionsBySeller(jwt));
+    }
+  }, [dispatch]);
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "N/A";
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en-IN", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
   return (
     <TableContainer component={Paper}>
       <Table sx={{ minWidth: 700 }} aria-label="customized table">
@@ -54,20 +64,55 @@ export default function TransactionTable() {
             <StyledTableCell>Date</StyledTableCell>
             <StyledTableCell>Customer Details</StyledTableCell>
             <StyledTableCell align="right">Order</StyledTableCell>
-            <StyledTableCell align="right">Account</StyledTableCell>
+            <StyledTableCell align="right">Amount</StyledTableCell>
           </TableRow>
         </TableHead>
         <TableBody>
-          {rows.map((row) => (
-            <StyledTableRow key={row.name}>
-              <StyledTableCell component="th" scope="row">
-                {row.name}
+          {transactions && transactions.length > 0 ? (
+            transactions.map((transaction: Transaction) => (
+              <StyledTableRow key={transaction.id}>
+                <StyledTableCell component="th" scope="row">
+                  {formatDate(transaction.date)}
+                </StyledTableCell>
+                <StyledTableCell>
+                  <div className="flex flex-col">
+                    <span className="font-semibold text-gray-800">
+                      {transaction.customer?.fullName || "Guest Customer"}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {transaction.customer?.email}
+                    </span>
+                    {transaction.customer?.mobile && (
+                      <span className="text-xs text-gray-500">
+                        {transaction.customer.mobile}
+                      </span>
+                    )}
+                  </div>
+                </StyledTableCell>
+                <StyledTableCell align="right">
+                  <div className="flex flex-col items-end">
+                    <span className="font-medium text-gray-700">
+                      Order #{transaction.order?.id || "N/A"}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      Status: {transaction.order?.orderStatus || "PENDING"}
+                    </span>
+                  </div>
+                </StyledTableCell>
+                <StyledTableCell align="right">
+                  <span className="font-bold text-teal-700">
+                    ₹{transaction.order?.totalSellingPrice ?? transaction.order?.totalMrpPrice ?? 0}
+                  </span>
+                </StyledTableCell>
+              </StyledTableRow>
+            ))
+          ) : (
+            <StyledTableRow>
+              <StyledTableCell colSpan={4} align="center" sx={{ py: 6, color: "text.secondary" }}>
+                No transactions found
               </StyledTableCell>
-              <StyledTableCell align="right">{row.fat}</StyledTableCell>
-              <StyledTableCell align="right">{row.carbs}</StyledTableCell>
-              <StyledTableCell align="right">{row.protein}</StyledTableCell>
             </StyledTableRow>
-          ))}
+          )}
         </TableBody>
       </Table>
     </TableContainer>

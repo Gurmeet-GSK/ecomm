@@ -6,6 +6,13 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
+import { useAppDispatch, useAppSelector } from '../../../State/Store';
+import { useEffect } from 'react';
+import React from 'react';
+import { fetchSellerProducts } from '../../../State/seller/sellerProductSlice';
+import type { Product } from '../../../types/ProductTypes';
+import { Button, IconButton } from '@mui/material';
+import { Edit } from '@mui/icons-material';
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   [`&.${tableCellClasses.head}`]: {
@@ -27,52 +34,89 @@ const StyledTableRow = styled(TableRow)(({ theme }) => ({
   },
 }));
 
-function createData(
-  name: string,
-  calories: number,
-  fat: number,
-  carbs: number,
-  protein: number,
-) {
-  return { name, calories, fat, carbs, protein };
-}
-
-const rows = [
-  createData('Frozen yoghurt', 159, 6.0, 24, 4.0),
-  createData('Ice cream sandwich', 237, 9.0, 37, 4.3),
-  createData('Eclair', 262, 16.0, 24, 6.0),
-  createData('Cupcake', 305, 3.7, 67, 4.3),
-  createData('Gingerbread', 356, 16.0, 49, 3.9),
-];
-
 export default function ProductTable() {
+  const dispatch = useAppDispatch();
+  const { sellerProduct } = useAppSelector((store) => store);
+
+  const handleUpdateClick = (product: Product) => {
+    // Handler for future edit product modal / navigation
+    if (product.id) {
+      // product edit action
+    }
+  };
+
+  useEffect(() => {
+    const jwt = localStorage.getItem("jwt");
+    if (jwt) {
+      dispatch(fetchSellerProducts(jwt));
+    }
+  }, [dispatch]);
+
   return (
     <TableContainer component={Paper}>
-      <Table sx={{ minWidth: 700 }} aria-label="customized table">
+      <Table sx={{ minWidth: 700 }} aria-label="seller product table">
         <TableHead>
           <TableRow>
             <StyledTableCell>Image</StyledTableCell>
-            <StyledTableCell>Title  </StyledTableCell>
+            <StyledTableCell>Title</StyledTableCell>
             <StyledTableCell align="right">MRP</StyledTableCell>
             <StyledTableCell align="right">Selling</StyledTableCell>
             <StyledTableCell align="right">Color</StyledTableCell>
             <StyledTableCell align="right">Update Stock</StyledTableCell>
             <StyledTableCell align="right">Update</StyledTableCell>
           </TableRow>
-          
         </TableHead>
         <TableBody>
-          {rows.map((row) => (
-            <StyledTableRow key={row.name}>
-              <StyledTableCell component="th" scope="row">
-                {row.name}
+          {sellerProduct.products && sellerProduct.products.length > 0 ? (
+            sellerProduct.products.map((item: Product) => (
+              <StyledTableRow key={item.id}>
+                <StyledTableCell component="th" scope="row">
+                  <div className="flex gap-1 flex-wrap">
+                    {item.images?.map((img, i) => (
+                      <img
+                        key={i}
+                        className="rounded-md w-10 h-10 object-cover"
+                        src={img}
+                        alt={item.title || "Product"}
+                      />
+                    ))}
+                  </div>
+                </StyledTableCell>
+                <StyledTableCell align="right">{item.title}</StyledTableCell>
+                <StyledTableCell align="right">₹{item.mrpPrice}</StyledTableCell>
+                <StyledTableCell align="right">₹{item.sellingPrice}</StyledTableCell>
+                <StyledTableCell align="right">{item.color}</StyledTableCell>
+                <StyledTableCell align="right">
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color={item.in_stock ? "success" : "error"}
+                  >
+                    {item.in_stock ? "In stock" : "Out of stock"}
+                  </Button>
+                </StyledTableCell>
+                <StyledTableCell align="right">
+                  <IconButton
+                    color="primary"
+                    size="small"
+                    onClick={() => handleUpdateClick(item)}
+                  >
+                    <Edit fontSize="small" />
+                  </IconButton>
+                </StyledTableCell>
+              </StyledTableRow>
+            ))
+          ) : (
+            <StyledTableRow>
+              <StyledTableCell
+                colSpan={7}
+                align="center"
+                sx={{ py: 4, color: "text.secondary" }}
+              >
+                No products found
               </StyledTableCell>
-              <StyledTableCell align="right">{row.calories}</StyledTableCell>
-              <StyledTableCell align="right">{row.fat}</StyledTableCell>
-              <StyledTableCell align="right">{row.carbs}</StyledTableCell>
-              <StyledTableCell align="right">{row.protein}</StyledTableCell>
             </StyledTableRow>
-          ))}
+          )}
         </TableBody>
       </Table>
     </TableContainer>
