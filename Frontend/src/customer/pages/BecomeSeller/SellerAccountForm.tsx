@@ -1,11 +1,13 @@
 import React, { useState } from "react";
-import { Box, Button, Step, StepLabel, Stepper } from "@mui/material";
+import { Alert, Box, Button, CircularProgress, Step, StepLabel, Stepper } from "@mui/material";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import BecomeSellerFormStep1 from "./BecomeSellerFormStep1";
 import BecomeSellerFormStep2 from "./BecomeSellerFormStep2";
 import BecomeSellerFromStep3 from "./BecomeSellerFromStep3";
 import BecomeSellerFormStep4 from "./BecomeSellerFormStep4";
+import { useAppDispatch, useAppSelector } from "../../../State/Store";
+import { createSeller } from "../../../State/seller/sellerSlice";
 
 interface SellerAccountFormProps {
     onToggleLogin?: () => void;
@@ -33,6 +35,9 @@ const validationSchemas = [
     // Step 2 Schema (Pickup Address)
     Yup.object({
         name: Yup.string().trim().required("Name is required"),
+        pickupMobile: Yup.string()
+            .matches(/^[6-9]\d{9}$/, "Enter a valid 10-digit mobile number")
+            .required("Mobile number is required"),
         address: Yup.string().trim().min(5, "Address must be at least 5 characters").required("Address is required"),
         locality: Yup.string().trim().required("Locality is required"),
         city: Yup.string().trim().required("City is required"),
@@ -44,7 +49,7 @@ const validationSchemas = [
         accountNumber: Yup.string()
             .min(9, "Account number must be at least 9 digits")
             .required("Account number is required"),
-        ifsCode: Yup.string()
+        ifscCode: Yup.string()
             .trim()
             .matches(/^[A-Z]{4}0[A-Z0-9]{6}$/, "Enter a valid 11-character IFSC code (e.g. SBIN0001234)")
             .required("IFSC code is required"),
@@ -61,19 +66,23 @@ const validationSchemas = [
 
 const SellerAccountForm: React.FC<SellerAccountFormProps> = ({ onToggleLogin }) => {
     const [activeStep, setActiveStep] = useState(0);
+    const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+    const dispatch = useAppDispatch();
+    const sellerState = useAppSelector((state) => state.seller);
 
     const formik = useFormik({
         initialValues: {
             mobile: "",
             GSTIN: "",
             name: "",
+            pickupMobile: "",
             address: "",
             locality: "",
             city: "",
             state: "",
             pinCode: "",
             accountNumber: "",
-            ifsCode: "",
+            ifscCode: "",
             accountHolderName: "",
             businessName: "",
             sellerName: "",
@@ -81,11 +90,48 @@ const SellerAccountForm: React.FC<SellerAccountFormProps> = ({ onToggleLogin }) 
             password: "",
         },
         validationSchema: validationSchemas[activeStep],
-        onSubmit: (values) => {
+        onSubmit: async (values) => {
             if (activeStep < steps.length - 1) {
                 setActiveStep((prev) => prev + 1);
             } else {
-                alert(`Seller Account Created Successfully for: ${values.businessName} (${values.sellerName})`);
+                setStatusMessage(null);
+                const sellerPayload = {
+                    sellerName: values.sellerName.trim(),
+                    mobile: values.mobile.trim(),
+                    email: values.email.trim(),
+                    password: values.password,
+                    GSTIN: values.GSTIN.trim(),
+                    pickupAddress: {
+                        name: values.name.trim(),
+                        mobile: (values.pickupMobile || values.mobile).trim(),
+                        pinCode: values.pinCode.trim(),
+                        address: values.address.trim(),
+                        locality: values.locality.trim(),
+                        city: values.city.trim(),
+                        state: values.state.trim(),
+                    },
+                    bankDetails: {
+                        accountNumber: values.accountNumber.trim(),
+                        ifscCode: values.ifscCode.trim(),
+                        accountHolderName: values.accountHolderName.trim(),
+                    },
+                    businessDetails: {
+                        businessName: values.businessName.trim(),
+                    },
+                };
+
+                try {
+                    await dispatch(createSeller(sellerPayload)).unwrap();
+                    setStatusMessage({
+                        type: "success",
+                        text: "Seller account created successfully! Please check your email to verify your account or proceed to login.",
+                    });
+                } catch (err: any) {
+                    setStatusMessage({
+                        type: "error",
+                        text: typeof err === "string" ? err : err?.message || "Failed to create seller account.",
+                    });
+                }
             }
         },
     });
@@ -108,8 +154,8 @@ const SellerAccountForm: React.FC<SellerAccountFormProps> = ({ onToggleLogin }) 
 
         const currentStepKeys = [
             ["mobile", "GSTIN"],
-            ["name", "address", "locality", "city", "state", "pinCode"],
-            ["accountNumber", "ifsCode", "accountHolderName"],
+            ["name", "pickupMobile", "address", "locality", "city", "state", "pinCode"],
+            ["accountNumber", "ifscCode", "accountHolderName"],
             ["businessName", "sellerName", "email", "password"],
         ][activeStep];
 
@@ -156,6 +202,16 @@ const SellerAccountForm: React.FC<SellerAccountFormProps> = ({ onToggleLogin }) 
                 ))}
             </Stepper>
 
+            {statusMessage && (
+                <Alert
+                    severity={statusMessage.type}
+                    onClose={() => setStatusMessage(null)}
+                    sx={{ borderRadius: "4px" }}
+                >
+                    {statusMessage.text}
+                </Alert>
+            )}
+
             <form onSubmit={handleStepSubmit} noValidate className="space-y-6 pt-2">
                 {activeStep === 0 && <BecomeSellerFormStep1 formik={formik} />}
                 {activeStep === 1 && <BecomeSellerFormStep2 formik={formik} />}
@@ -166,7 +222,7 @@ const SellerAccountForm: React.FC<SellerAccountFormProps> = ({ onToggleLogin }) 
                 <Box className="flex justify-between items-center gap-4 pt-2">
                     <Button
                         onClick={handleBack}
-                        disabled={activeStep === 0}
+                        disabled={activeStep === 0 || sellerState.loading}
                         variant="contained"
                         sx={{
                             visibility: activeStep === 0 ? "hidden" : "visible",
@@ -186,6 +242,7 @@ const SellerAccountForm: React.FC<SellerAccountFormProps> = ({ onToggleLogin }) 
 
                     <Button
                         type="submit"
+                        disabled={sellerState.loading}
                         variant="contained"
                         sx={{
                             bgcolor: "#00897b",
@@ -199,7 +256,13 @@ const SellerAccountForm: React.FC<SellerAccountFormProps> = ({ onToggleLogin }) 
                             "&:hover": { bgcolor: "#00695c", boxShadow: "none" },
                         }}
                     >
-                        {activeStep === steps.length - 1 ? "Create" : "Continue"}
+                        {sellerState.loading && activeStep === steps.length - 1 ? (
+                            <CircularProgress size={24} sx={{ color: "#fff" }} />
+                        ) : activeStep === steps.length - 1 ? (
+                            "Create"
+                        ) : (
+                            "Continue"
+                        )}
                     </Button>
                 </Box>
             </form>

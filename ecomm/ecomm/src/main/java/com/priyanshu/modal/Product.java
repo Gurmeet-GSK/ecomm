@@ -38,6 +38,10 @@ public class Product {
     @ElementCollection
     private List<String> images = new ArrayList<>();
 
+    // URL of the primary product image (Cloudinary)
+    @Column(name = "image_url", length = 1024, nullable = true)
+    private String imageUrl;
+
     private int numRatings;
 
     @ManyToOne
@@ -49,6 +53,8 @@ public class Product {
     private LocalDateTime createdAt;
 
     private String Sizes;
+
+    private boolean in_stock = true;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Review> reviews = new ArrayList<>();

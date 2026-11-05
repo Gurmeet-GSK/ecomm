@@ -3,7 +3,7 @@ import './App.css';
 import Navbar from "./customer/components/Navbar/Navbar"
 import { ThemeProvider } from "@mui/material";
 import customTheme from "./Theme/customTheme";
-import { Routes, Route, useNavigate } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import Review from './customer/pages/Review/Review';
 import Product from './customer/pages/Product/Product';
 import Home from './customer/pages/Home/Home';
@@ -14,6 +14,7 @@ import ProductDetails from './customer/pages/Product Details/ProductDetails';
 import BecomeSeller from './customer/pages/BecomeSeller/BecomeSeller';
 import AdminDashboard from './admin/Pages/Dashboard/Dashboard';
 import SellerRoutes from './Routes/SellerRoutes';
+import SellerRoute from './Routes/SellerRoute';
 import Auth from './customer/pages/Auth/Auth';
 import { useAppDispatch, useAppSelector } from './State/Store';
 import { fetchSellerProfile } from './State/seller/sellerSlice';
@@ -24,44 +25,45 @@ import { homeCategories } from './data/HomeCategories';
 import { createHomeCategories } from './State/customer/customerSlice';
 
 function App() {
-
   const dispatch = useAppDispatch();
-  const { seller, auth } = useAppSelector(store => store);
+  const sellerProfile = useAppSelector(state => state.seller.profile);
+  const authJwt = useAppSelector(state => state.auth.jwt);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
-    dispatch(fetchSellerProfile(localStorage.getItem("jwt") || ""));
+    const sellerJwt = localStorage.getItem("seller_jwt") || localStorage.getItem("jwt");
+    const role = localStorage.getItem("role");
+    if (sellerJwt && role === "ROLE_SELLER") {
+      dispatch(fetchSellerProfile(sellerJwt));
+    }
     dispatch(createHomeCategories(homeCategories));
   }, [dispatch]);
 
   useEffect(() => {
-    if (seller.profile) {
+    if (sellerProfile && (location.pathname === "/become-seller" || location.pathname === "/login")) {
       navigate("/seller");
     }
-  }, [seller.profile, navigate]);
+  }, [sellerProfile, location.pathname, navigate]);
 
   useEffect(() => {
-    dispatch(fetchUserProfile({ jwt: auth.jwt || localStorage.getItem("jwt") || "" }));
-  }, [auth.jwt, dispatch]);
+    const customerJwt = localStorage.getItem("customer_jwt") || authJwt;
+    if (customerJwt) {
+      dispatch(fetchUserProfile({ jwt: customerJwt }));
+    }
+  }, [authJwt, dispatch]);
 
   return (
-
     <ThemeProvider theme={customTheme}>
       <div className="p-0">
         <Navbar />
-        {/* <Home/> */}
-        {/* <Product/> */}
-        {/* <ProductDetails/> */}
-        {/* <Review/> */}
-        {/* <Cart/> */}
-        {/* <Checkout /> */}
-        {/* <Account/> */}
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Auth />} />
           
+          <Route path="/products" element={<Product />} />
           <Route path="/products/:category" element={<Product />} />
-          <Route path="/reviews/producId" element={<Review />} />
+          <Route path="/reviews/:productId" element={<Review />} />
           <Route path="/product-details/:categoryId/:name/:productId" element={<ProductDetails />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/wishlist" element={<Wishlist />} />
@@ -69,14 +71,17 @@ function App() {
           <Route path="/payment-success/:orderId" element={<PaymentSuccess />} /> 
           <Route path="/account/*" element={<Account />} />
           <Route path="/become-seller" element={<BecomeSeller />} />
-          <Route path="/seller/*" element={<SellerRoutes />} />
+          
+          {/* Protected Seller Routes */}
+          <Route element={<SellerRoute />}>
+            <Route path="/seller/*" element={<SellerRoutes />} />
+          </Route>
+
           <Route path="/admin/*" element={<AdminDashboard />} />
-
-
         </Routes>
       </div>
     </ThemeProvider>
-  )
+  );
 }
 
-export default App
+export default App;

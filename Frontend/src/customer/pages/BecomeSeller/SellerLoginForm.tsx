@@ -1,31 +1,36 @@
-import React, { useState } from "react";
-import { Alert, Button, CircularProgress, TextField } from "@mui/material";
+import { Button, CircularProgress, IconButton, InputAdornment, TextField } from "@mui/material";
 import { useFormik } from "formik";
+import { useState } from "react";
 import * as Yup from "yup";
-import { useNavigate } from "react-router-dom";
-import { useAppDispatch, useAppSelector } from "../../../State/Store";
-import { sendLoginSignUpOtp } from "../../../State/AuthSlice";
+import { useAppDispatch } from "../../../State/Store";
 import { sellerLogin } from "../../../State/seller/sellerAuthSlice";
+import { sendLoginSignupOtp } from "../../../State/AuthSlice";
+import { useNavigate } from "react-router-dom";
+import Visibility from "@mui/icons-material/Visibility";
+import VisibilityOff from "@mui/icons-material/VisibilityOff";
+import Alert from "@mui/material/Alert";
 
 interface SellerLoginFormProps {
     onToggleRegister?: () => void;
 }
 
-const SellerLoginForm: React.FC<SellerLoginFormProps> = ({ onToggleRegister }) => {
-    const [loginWithOtp, setLoginWithOtp] = useState(true);
-    const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-
-    const dispatch = useAppDispatch();
+const SellerLoginForm = ({ onToggleRegister }: SellerLoginFormProps) => {
     const navigate = useNavigate();
-
-    const authState = useAppSelector((state) => state.auth);
-    const sellerAuthState = useAppSelector((state) => state.sellerAuth);
+    const dispatch = useAppDispatch();
+    const [loginWithOtp, setLoginWithOtp] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [otpSent, setOtpSent] = useState(false);
+    const [sendingOtp, setSendingOtp] = useState(false);
+    const [statusMessage, setStatusMessage] = useState<{
+        type: "success" | "error" | "info";
+        text: string;
+    } | null>(null);
 
     const formik = useFormik({
         initialValues: {
             email: "",
-            password: "",
             otp: "",
+            password: "",
         },
         validationSchema: Yup.object({
             email: Yup.string()
@@ -42,26 +47,23 @@ const SellerLoginForm: React.FC<SellerLoginFormProps> = ({ onToggleRegister }) =
         }),
         onSubmit: async (values) => {
             setStatusMessage(null);
-            console.log("form data SellerLoginForm: ", values);
             try {
-                const res = await dispatch(
+                await dispatch(
                     sellerLogin({
                         email: values.email.trim(),
                         otp: values.otp.trim(),
                     })
                 ).unwrap();
 
-                console.log("Seller login success: ", res);
                 setStatusMessage({ type: "success", text: "Login Successful! Redirecting..." });
                 setTimeout(() => {
                     navigate("/seller");
-                }, 1000);
+                }, 800);
             } catch (err: any) {
-                console.error("Seller login error: ", err);
                 const errorText =
                     typeof err === "string"
                         ? err
-                        : err?.message || "Login failed. Please check your OTP and try again.";
+                        : err?.message || "Login failed. Please check your credentials and try again.";
                 setStatusMessage({ type: "error", text: errorText });
             }
         },
@@ -69,229 +71,168 @@ const SellerLoginForm: React.FC<SellerLoginFormProps> = ({ onToggleRegister }) =
 
     const handleSendOtp = async () => {
         setStatusMessage(null);
-        formik.setFieldTouched("email", true);
-        const emailErrors = await formik.validateField("email");
-
-        if (!formik.values.email || emailErrors) {
+        if (!formik.values.email) {
+            formik.setFieldTouched("email", true);
             return;
         }
 
-        try {
-            // For seller sign-in, backend expects signing_ prefix and ROLE_SELLER
-            const emailToSend = "signing_" + formik.values.email.trim();
-            const res = await dispatch(
-                sendLoginSignUpOtp({
-                    email: emailToSend,
-                    role: "ROLE_SELLER",
-                })
-            ).unwrap();
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(formik.values.email)) {
+            setStatusMessage({ type: "error", text: "Please enter a valid email address." });
+            return;
+        }
 
-            console.log("OTP Sent Result: ", res);
+        setSendingOtp(true);
+        try {
+            await dispatch(sendLoginSignupOtp({ email: formik.values.email.trim() })).unwrap();
+            setOtpSent(true);
             setStatusMessage({
                 type: "success",
-                text: `OTP sent successfully to ${formik.values.email}! Please check your inbox.`,
+                text: "OTP sent successfully to your registered email address.",
             });
         } catch (err: any) {
-            console.error("Send OTP Error: ", err);
-            const errorText =
+            const errorMsg =
                 typeof err === "string"
                     ? err
-                    : err?.message || "Failed to send OTP. Please make sure your seller account exists.";
-            setStatusMessage({ type: "error", text: errorText });
+                    : err?.message || "Failed to send OTP. Please try again.";
+            setStatusMessage({ type: "error", text: errorMsg });
+        } finally {
+            setSendingOtp(false);
         }
     };
 
-    const isSendingOtp = authState.loading;
-    const isLoggingIn = sellerAuthState.loading;
-
     return (
-        <form onSubmit={formik.handleSubmit} noValidate className="space-y-5">
-            <h2 className="text-xl font-bold text-center text-[#00897b] tracking-wide">
-                Login As Seller
-            </h2>
+        <div className="w-full max-w-md mx-auto p-6 bg-white rounded-lg shadow-sm border border-gray-100">
+            <h1 className="text-center font-bold text-2xl text-teal-700 pb-2">Seller Login</h1>
+            <p className="text-center text-sm text-gray-500 mb-6">
+                Access your Black Mason Seller Dashboard
+            </p>
 
             {statusMessage && (
                 <Alert
-                    severity={statusMessage.type}
+                    severity={statusMessage.type === "info" ? "info" : statusMessage.type}
                     onClose={() => setStatusMessage(null)}
-                    sx={{ fontSize: "0.85rem" }}
+                    className="mb-4"
                 >
                     {statusMessage.text}
                 </Alert>
             )}
 
-            <div className="space-y-4">
-                {/* Email Field */}
-                <div>
+            <form onSubmit={formik.handleSubmit} className="space-y-4">
+                <TextField
+                    fullWidth
+                    name="email"
+                    label="Registered Business Email"
+                    value={formik.values.email}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    error={formik.touched.email && Boolean(formik.errors.email)}
+                    helperText={formik.touched.email && formik.errors.email}
+                    disabled={formik.isSubmitting}
+                />
+
+                {!loginWithOtp && (
                     <TextField
                         fullWidth
-                        name="email"
-                        label="Email"
-                        placeholder="Email"
-                        value={formik.values.email}
+                        name="password"
+                        label="Password"
+                        type={showPassword ? "text" : "password"}
+                        value={formik.values.password}
                         onChange={formik.handleChange}
                         onBlur={formik.handleBlur}
-                        error={formik.touched.email && Boolean(formik.errors.email)}
-                        helperText={formik.touched.email && formik.errors.email}
-                        sx={{
-                            "& .MuiOutlinedInput-root": {
-                                borderRadius: "4px",
-                                bgcolor: "#fff",
+                        error={formik.touched.password && Boolean(formik.errors.password)}
+                        helperText={formik.touched.password && formik.errors.password}
+                        disabled={formik.isSubmitting}
+                        slotProps={{
+                            input: {
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        <IconButton
+                                            aria-label="toggle password visibility"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            edge="end"
+                                        >
+                                            {showPassword ? <VisibilityOff /> : <Visibility />}
+                                        </IconButton>
+                                    </InputAdornment>
+                                ),
                             },
                         }}
                     />
+                )}
+
+                {loginWithOtp && (
+                    <div className="space-y-2">
+                        <div className="flex gap-2 items-start">
+                            <TextField
+                                fullWidth
+                                name="otp"
+                                label="Enter 6-digit OTP"
+                                value={formik.values.otp}
+                                onChange={formik.handleChange}
+                                onBlur={formik.handleBlur}
+                                error={formik.touched.otp && Boolean(formik.errors.otp)}
+                                helperText={formik.touched.otp && formik.errors.otp}
+                                disabled={formik.isSubmitting || !otpSent}
+                            />
+                            <Button
+                                variant="outlined"
+                                onClick={handleSendOtp}
+                                disabled={sendingOtp || formik.isSubmitting}
+                                sx={{
+                                    height: "56px",
+                                    minWidth: "120px",
+                                    borderColor: "#00897b",
+                                    color: "#00897b",
+                                    "&:hover": { borderColor: "#00695c", backgroundColor: "#e0f2f1" },
+                                }}
+                            >
+                                {sendingOtp ? (
+                                    <CircularProgress size={20} color="inherit" />
+                                ) : otpSent ? (
+                                    "Resend OTP"
+                                ) : (
+                                    "Send OTP"
+                                )}
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
+                <div className="flex justify-between items-center text-sm pt-1">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setLoginWithOtp(!loginWithOtp);
+                            setStatusMessage(null);
+                        }}
+                        className="text-teal-700 hover:text-teal-900 font-medium underline cursor-pointer bg-transparent border-none p-0"
+                    >
+                        {loginWithOtp ? "Login with Password instead" : "Login with OTP instead"}
+                    </button>
                 </div>
 
-                {/* OTP Field matching Screenshot 1 */}
-                {loginWithOtp ? (
-                    <div className="space-y-2">
-                        <p className="text-xs text-gray-600">Enter OTP sent to your email</p>
-                        <TextField
-                            fullWidth
-                            name="otp"
-                            label="Otp"
-                            placeholder="Otp"
-                            value={formik.values.otp}
-                            onChange={(e) => {
-                                const onlyDigits = e.target.value.replace(/\D/g, "");
-                                formik.setFieldValue("otp", onlyDigits.slice(0, 6));
-                            }}
-                            onBlur={formik.handleBlur}
-                            error={formik.touched.otp && Boolean(formik.errors.otp)}
-                            helperText={formik.touched.otp && formik.errors.otp}
-                            slotProps={{
-                                htmlInput: { maxLength: 6, inputMode: "numeric" },
-                            }}
-                            sx={{
-                                "& .MuiOutlinedInput-root": {
-                                    borderRadius: "4px",
-                                    bgcolor: "#fff",
-                                },
-                            }}
-                        />
-                    </div>
-                ) : (
-                    <div>
-                        <TextField
-                            fullWidth
-                            type="password"
-                            name="password"
-                            label="Password"
-                            placeholder="Password"
-                            value={formik.values.password}
-                            onChange={formik.handleChange}
-                            onBlur={formik.handleBlur}
-                            error={formik.touched.password && Boolean(formik.errors.password)}
-                            helperText={formik.touched.password && formik.errors.password}
-                            sx={{
-                                "& .MuiOutlinedInput-root": {
-                                    borderRadius: "4px",
-                                    bgcolor: "#fff",
-                                },
-                            }}
-                        />
-                    </div>
-                )}
-            </div>
-
-            {/* SEND OTP BUTTON matching Screenshot 1 */}
-            {loginWithOtp && (
                 <Button
-                    type="button"
-                    onClick={handleSendOtp}
-                    disabled={isSendingOtp}
-                    variant="contained"
+                    type="submit"
                     fullWidth
+                    variant="contained"
+                    disabled={formik.isSubmitting || (loginWithOtp && !otpSent)}
                     sx={{
-                        bgcolor: "#00897b",
-                        color: "#fff",
-                        textTransform: "uppercase",
-                        fontWeight: 700,
-                        py: 1.2,
-                        borderRadius: "4px",
-                        boxShadow: "none",
-                        letterSpacing: "0.05em",
-                        "&:hover": { bgcolor: "#00695c", boxShadow: "none" },
+                        py: "12px",
+                        backgroundColor: "#00897b",
+                        "&:hover": { backgroundColor: "#00695c" },
+                        fontSize: "0.95rem",
+                        fontWeight: 600,
                     }}
                 >
-                    {isSendingOtp ? (
-                        <div className="flex items-center gap-2">
-                            <CircularProgress size={20} color="inherit" />
-                            <span>Sending OTP...</span>
-                        </div>
+                    {formik.isSubmitting ? (
+                        <CircularProgress size={24} color="inherit" />
                     ) : (
-                        "Send OTP"
+                        "Login as Seller"
                     )}
                 </Button>
-            )}
-
-            {/* LOGIN BUTTON matching Screenshot 1 */}
-            <Button
-                type="submit"
-                disabled={isLoggingIn}
-                variant="contained"
-                fullWidth
-                sx={{
-                    bgcolor: "#00897b",
-                    color: "#fff",
-                    textTransform: "uppercase",
-                    fontWeight: 700,
-                    py: 1.2,
-                    borderRadius: "4px",
-                    boxShadow: "none",
-                    letterSpacing: "0.05em",
-                    "&:hover": { bgcolor: "#00695c", boxShadow: "none" },
-                }}
-            >
-                {isLoggingIn ? (
-                    <div className="flex items-center gap-2">
-                        <CircularProgress size={20} color="inherit" />
-                        <span>Logging In...</span>
-                    </div>
-                ) : (
-                    "Login"
-                )}
-            </Button>
-
-            {/* Optional Password / OTP toggle */}
-            <div className="text-center">
-                <button
-                    type="button"
-                    onClick={() => {
-                        setLoginWithOtp(!loginWithOtp);
-                        setStatusMessage(null);
-                    }}
-                    className="text-xs text-[#00897b] hover:underline"
-                >
-                    {loginWithOtp ? "Login with password instead" : "Login with OTP instead"}
-                </button>
-            </div>
-
-            {/* Bottom Register Switch matching Screenshot 1 */}
-            <div className="pt-2 text-center space-y-2">
-                <p className="text-xs text-gray-600">have account</p>
-                <Button
-                    onClick={onToggleRegister}
-                    fullWidth
-                    variant="outlined"
-                    sx={{
-                        py: "10px",
-                        color: "#00897b",
-                        borderColor: "#00897b",
-                        textTransform: "uppercase",
-                        fontWeight: 700,
-                        letterSpacing: "0.05em",
-                        borderRadius: "4px",
-                        "&:hover": {
-                            borderColor: "#00695c",
-                            bgcolor: "rgba(0, 137, 123, 0.04)",
-                        },
-                    }}
-                >
-                    Register
-                </Button>
-            </div>
-        </form>
+            </form>
+        </div>
     );
 };
 

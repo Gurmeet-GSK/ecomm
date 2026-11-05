@@ -9,6 +9,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined";
 import StorefrontOutlinedIcon from "@mui/icons-material/StorefrontOutlined";
+import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
 import { AccountCircleRounded } from "@mui/icons-material";
 import CategorySheet from "./CategorySheet";
 import { useNavigate } from "react-router-dom";
@@ -17,7 +18,6 @@ import { useAppSelector } from "../../../State/Store";
 const TEAL = "#00897b";
 const TEAL_DARK = "#00695c";
 
-// id must match the keys used in CategorySheet.tsx
 const links = [
   { label: "Men", id: "men" },
   { label: "Women", id: "women" },
@@ -29,17 +29,23 @@ const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showSheet, setShowSheet] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("men");
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   const auth = useAppSelector((state) => state.auth);
+  const seller = useAppSelector((state) => state.seller);
+  const sellerAuth = useAppSelector((state) => state.sellerAuth);
   const { wishlist } = useAppSelector((state) => state.wishlist);
+
   const isLoggedIn = auth.isLoggedIn;
+  const isSeller = Boolean(sellerAuth.isSellerLoggedIn || seller.profile || localStorage.getItem("seller_jwt"));
   const isLarge = true;
+
+  const displayName = auth.user?.fullName?.split(" ")[0] || seller.profile?.sellerName?.split(" ")[0] || "Account";
 
   return (
     <header className="sticky top-0 z-50 border-b border-gray-200 bg-white">
       <div className="mx-auto flex h-16 max-w-screen-2xl items-center justify-between px-10">
-        {/* Left: menu icon (mobile only), title, links (desktop only) */}
+        {/* Left: menu icon, logo, links */}
         <div className="flex h-full items-center gap-2 md:gap-15">
           <div className="md:hidden">
             {!isLarge && (
@@ -52,15 +58,17 @@ const Navbar = () => {
             )}
           </div>
 
-          <h1 onClick={()=>navigate("/")} className="cursor-pointer text-lg font-extrabold uppercase tracking-tight text-gray-900 md:text-2xl">
+          <h1
+            onClick={() => navigate("/")}
+            className="cursor-pointer text-lg font-extrabold uppercase tracking-tight text-gray-900 md:text-2xl"
+          >
             Black Mason
           </h1>
 
-          {/* Desktop links as an unordered list */}
+          {/* Desktop links */}
           <nav className="hidden h-full md:block">
             <ul className="flex h-full items-center gap-8">
               {links.map((link) => {
-                // keeps the underline on while this category's sheet is open
                 const isActive = showSheet && selectedCategory === link.id;
 
                 return (
@@ -74,13 +82,17 @@ const Navbar = () => {
                     onMouseLeave={() => setShowSheet(false)}
                   >
                     <a
-                      href="#"
+                      href={`/products/${link.id}`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setShowSheet(false);
+                        navigate(`/products/${link.id}`);
+                      }}
                       className={`relative inline-block py-1 text-sm font-medium transition-colors duration-300 ${
                         isActive ? "text-[#00897b]" : "text-gray-700"
                       }`}
                     >
                       {link.label}
-                      {/* Underline that grows from left to right */}
                       <span
                         className={`absolute bottom-0 left-0 h-0.5 w-full origin-left bg-[#00897b] transition-transform duration-300 ${
                           isActive ? "scale-x-100" : "scale-x-0"
@@ -94,14 +106,15 @@ const Navbar = () => {
           </nav>
         </div>
 
-        {/* Right: search, login/profile, wishlist, cart, become seller */}
+        {/* Right side icons & buttons */}
         <div className="flex items-center gap-2 md:gap-5">
-          <IconButton aria-label="Search">
+          <IconButton aria-label="Search" onClick={() => navigate("/products")}>
             <SearchIcon />
           </IconButton>
 
-          {isLoggedIn ? (
-            <Button onClick={() => navigate("/account/orders")}
+          {isLoggedIn || isSeller ? (
+            <Button
+              onClick={() => navigate(isSeller && !isLoggedIn ? "/seller" : "/account/orders")}
               className="flex items-center gap-2"
               sx={{ color: "#111827", textTransform: "none" }}
             >
@@ -110,7 +123,7 @@ const Navbar = () => {
                 src="https://i.pinimg.com/474x/23/7b/ef/237bef165970536a461db1b78fb3d1a9.jpg"
               />
               <span className="hidden font-semibold lg:block">
-                {auth.user?.fullName?.split(" ")[0] || "Account"}
+                {displayName}
               </span>
             </Button>
           ) : (
@@ -128,34 +141,51 @@ const Navbar = () => {
             </Button>
           )}
 
-          <IconButton onClick={()=>navigate("/wishlist")} aria-label="Wishlist">
+          <IconButton onClick={() => navigate("/wishlist")} aria-label="Wishlist">
             <Badge badgeContent={wishlist?.products?.length || 0} color="error">
               <FavoriteBorderIcon />
             </Badge>
           </IconButton>
 
-          <IconButton onClick={()=>navigate("/cart")} aria-label="Cart">
+          <IconButton onClick={() => navigate("/cart")} aria-label="Cart">
             <ShoppingCartOutlinedIcon />
           </IconButton>
 
           <div className="hidden md:block">
-            <Button
-              onClick={() => navigate("/become-seller")}
-              variant="outlined"
-              startIcon={<StorefrontOutlinedIcon />}
-              sx={{
-                color: TEAL,
-                borderColor: TEAL,
-                "&:hover": { borderColor: TEAL_DARK, backgroundColor: "#e0f2f1" },
-              }}
-            >
-              Become Seller
-            </Button>
+            {isSeller ? (
+              <Button
+                onClick={() => navigate("/seller/products")}
+                variant="outlined"
+                startIcon={<DashboardOutlinedIcon />}
+                sx={{
+                  color: TEAL,
+                  borderColor: TEAL,
+                  "&:hover": { borderColor: TEAL_DARK, backgroundColor: "#e0f2f1" },
+                  textTransform: "none",
+                }}
+              >
+                Seller Dashboard
+              </Button>
+            ) : (
+              <Button
+                onClick={() => navigate("/become-seller")}
+                variant="outlined"
+                startIcon={<StorefrontOutlinedIcon />}
+                sx={{
+                  color: TEAL,
+                  borderColor: TEAL,
+                  "&:hover": { borderColor: TEAL_DARK, backgroundColor: "#e0f2f1" },
+                  textTransform: "none",
+                }}
+              >
+                Become Seller
+              </Button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Category sheet: sits right under the navbar and slides down when open */}
+      {/* Category sheet dropdown */}
       <div
         onMouseEnter={() => setShowSheet(true)}
         onMouseLeave={() => setShowSheet(false)}
@@ -165,7 +195,7 @@ const Navbar = () => {
             : "pointer-events-none invisible -translate-y-2 opacity-0"
         }`}
       >
-        <CategorySheet selectedCategory={selectedCategory} />
+        <CategorySheet selectedCategory={selectedCategory} onClose={() => setShowSheet(false)} />
       </div>
 
       {/* Mobile menu */}
@@ -174,19 +204,47 @@ const Navbar = () => {
           <ul className="flex flex-col gap-4">
             {links.map((link) => (
               <li key={link.id}>
-                <a href="#" className="text-sm font-medium text-gray-700">
+                <a
+                  href={`/products/${link.id}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setMenuOpen(false);
+                    navigate(`/products/${link.id}`);
+                  }}
+                  className="text-sm font-medium text-gray-700"
+                >
                   {link.label}
                 </a>
               </li>
             ))}
             <li>
-              <Button
-                variant="outlined"
-                startIcon={<StorefrontOutlinedIcon />}
-                sx={{ color: TEAL, borderColor: TEAL }}
-              >
-                Become Seller
-              </Button>
+              {isSeller ? (
+                <Button
+                  onClick={() => {
+                    setMenuOpen(false);
+                    navigate("/seller/products");
+                  }}
+                  variant="outlined"
+                  fullWidth
+                  startIcon={<DashboardOutlinedIcon />}
+                  sx={{ color: TEAL, borderColor: TEAL, textTransform: "none" }}
+                >
+                  Seller Dashboard
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => {
+                    setMenuOpen(false);
+                    navigate("/become-seller");
+                  }}
+                  variant="outlined"
+                  fullWidth
+                  startIcon={<StorefrontOutlinedIcon />}
+                  sx={{ color: TEAL, borderColor: TEAL, textTransform: "none" }}
+                >
+                  Become Seller
+                </Button>
+              )}
             </li>
           </ul>
         </nav>

@@ -5,14 +5,14 @@ export const fetchSellerProfile = createAsyncThunk(
   "/sellers/fetchSellerProfile",
   async (jwt: string, { rejectWithValue }) => {
     try {
+      const token = jwt.startsWith("Bearer ") ? jwt : `Bearer ${jwt}`;
       const response = await api.get("/sellers/profile", {
         headers: {
-          Authorization: `Bearer ${jwt}`,
+          Authorization: token,
         },
       });
       return response.data;
     } catch (error: any) {
-      console.log("error fetching seller profile: ", error);
       return rejectWithValue(
         error.response?.data?.message || error.message || "Failed to fetch seller profile"
       );
@@ -25,10 +25,8 @@ export const createSeller = createAsyncThunk(
   async (sellerData: any, { rejectWithValue }) => {
     try {
       const response = await api.post("/sellers", sellerData);
-      console.log("seller created response: ", response.data);
       return response.data;
     } catch (error: any) {
-      console.log("error creating seller: ", error);
       return rejectWithValue(
         error.response?.data?.message || error.message || "Failed to create seller"
       );
@@ -36,30 +34,54 @@ export const createSeller = createAsyncThunk(
   }
 );
 
-export interface SellerState {
-  profile: any | null;
+export const fetchSellerReport = createAsyncThunk(
+  "/sellers/fetchSellerReport",
+  async (jwt: string, { rejectWithValue }) => {
+    try {
+      const token = jwt.startsWith("Bearer ") ? jwt : `Bearer ${jwt}`;
+      const response = await api.get("/sellers/report", {
+        headers: {
+          Authorization: token,
+        },
+      });
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || error.message || "Failed to fetch seller report"
+      );
+    }
+  }
+);
+
+interface SellerState {
   sellers: any[];
+  selectedSeller: any | null;
+  profile: any | null;
+  report: any | null;
   loading: boolean;
-  error: string | null;
-  sellerCreated: boolean;
+  error: any;
 }
 
 const initialState: SellerState = {
-  profile: null,
   sellers: [],
+  selectedSeller: null,
+  profile: null,
+  report: null,
   loading: false,
   error: null,
-  sellerCreated: false,
 };
 
 const sellerSlice = createSlice({
-  name: "seller",
+  name: "sellers",
   initialState,
   reducers: {
     resetSellerState: (state) => {
-      state.error = null;
+      state.sellers = [];
+      state.selectedSeller = null;
+      state.profile = null;
+      state.report = null;
       state.loading = false;
-      state.sellerCreated = false;
+      state.error = null;
     },
   },
   extraReducers: (builder) => {
@@ -72,28 +94,38 @@ const sellerSlice = createSlice({
       .addCase(fetchSellerProfile.fulfilled, (state, action: PayloadAction<any>) => {
         state.loading = false;
         state.profile = action.payload;
-        state.error = null;
       })
-      .addCase(fetchSellerProfile.rejected, (state, action) => {
+      .addCase(fetchSellerProfile.rejected, (state, action: PayloadAction<any>) => {
         state.loading = false;
-        state.error = (action.payload as string) || "Failed to fetch seller profile";
+        state.error = action.payload;
       })
+
       // createSeller
       .addCase(createSeller.pending, (state) => {
         state.loading = true;
         state.error = null;
-        state.sellerCreated = false;
       })
       .addCase(createSeller.fulfilled, (state, action: PayloadAction<any>) => {
         state.loading = false;
-        state.profile = action.payload;
-        state.sellerCreated = true;
+        state.selectedSeller = action.payload;
+      })
+      .addCase(createSeller.rejected, (state, action: PayloadAction<any>) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // fetchSellerReport
+      .addCase(fetchSellerReport.pending, (state) => {
+        state.loading = true;
         state.error = null;
       })
-      .addCase(createSeller.rejected, (state, action) => {
+      .addCase(fetchSellerReport.fulfilled, (state, action: PayloadAction<any>) => {
         state.loading = false;
-        state.error = (action.payload as string) || "Failed to create seller";
-        state.sellerCreated = false;
+        state.report = action.payload;
+      })
+      .addCase(fetchSellerReport.rejected, (state, action: PayloadAction<any>) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });

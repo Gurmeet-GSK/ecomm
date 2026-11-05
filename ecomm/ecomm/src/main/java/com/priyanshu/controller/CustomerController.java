@@ -28,12 +28,12 @@ public class CustomerController {
         return new ResponseEntity<>(home, HttpStatus.ACCEPTED);
     }
 
-    @PostMapping("/home/categories")
-    public ResponseEntity<Home> createHomeCategories(
-            @RequestBody List<HomeCategory> homeCategories
-    ) {
-        List<HomeCategory> categories = homeCategoryService.createCategories(homeCategories);
-        Home home = homeService.createHomePageData(categories);
-        return new ResponseEntity<>(home, HttpStatus.ACCEPTED);
-    }
+//    @PostMapping("/home/categories")
+//    public ResponseEntity<Home> createHomeCategories(
+//            @RequestBody List<HomeCategory> homeCategories
+//    ) {
+//        List<HomeCategory> categories = homeCategoryService.createCategories(homeCategories);
+//        Home home = homeService.createHomePageData(categories);
+//        return new ResponseEntity<>(home, HttpStatus.ACCEPTED);
+//    }
 }

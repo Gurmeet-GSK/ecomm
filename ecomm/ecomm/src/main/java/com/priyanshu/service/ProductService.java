@@ -13,6 +13,7 @@ public interface ProductService {
     public Product createProduct(CreateProductRequest req, Seller seller);
     public void deleteProduct(Long productId) throws ProductExceptions;
     public Product updateProduct(Long productId, Product product) throws ProductExceptions;
+    public Product updateProductStock(Long productId) throws ProductExceptions;
     Product findProductById(Long productId) throws ProductExceptions;
     List<Product> searchProduct(String query);
     public Page<Product> getAllProducts(

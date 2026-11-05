@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import {
@@ -13,7 +13,8 @@ import {
     Select,
     Snackbar,
     Alert,
-    TextField
+    TextField,
+    InputAdornment
 } from "@mui/material";
 import AddPhotoAlternateIcon from "@mui/icons-material/AddPhotoAlternate";
 import CloseIcon from "@mui/icons-material/Close";
@@ -54,16 +55,13 @@ const validationSchema = Yup.object({
     description: Yup.string().required("Description is required"),
     mrpPrice: Yup.number()
         .typeError("MRP Price must be a number")
-        .positive("MRP Price must be positive")
+        .positive("MRP Price must be greater than 0")
         .required("MRP Price is required"),
-    sellingPrice: Yup.number()
-        .typeError("Selling Price must be a number")
-        .positive("Selling Price must be positive")
-        .required("Selling Price is required")
-        .test("is-less-than-mrp", "Selling Price cannot exceed MRP Price", function (value) {
-            const { mrpPrice } = this.parent;
-            return !mrpPrice || !value || value <= mrpPrice;
-        }),
+    discountPercent: Yup.number()
+        .typeError("Discount (%) must be a number")
+        .min(0, "Discount cannot be less than 0%")
+        .max(100, "Discount cannot exceed 100%")
+        .required("Discount (%) is required"),
     color: Yup.string().required("Color is required"),
     sizes: Yup.string().required("Sizes is required"),
     category: Yup.string().required("Category is required"),
@@ -77,21 +75,13 @@ const AddProduct = () => {
     const [snackbarMessage, setSnackbarMessage] = useState("");
     const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">("success");
     const dispatch = useAppDispatch();
-    // TODO: Connect editProduct once edit product feature is implemented
-    // const { editProduct } = useAppSelector(store => store.sellerProduct);
-    // useEffect(() => {
-    //     if (editProduct) {
-    //         formik.setValues(editProduct);
-    //     }
-    // }, [editProduct]);
-    
 
     const formik = useFormik({
         initialValues: {
             title: "",
             description: "",
             mrpPrice: "",
-            sellingPrice: "",
+            discountPercent: "0",
             color: "",
             sizes: "",
             images: [] as string[],
@@ -100,13 +90,37 @@ const AddProduct = () => {
             category3: "",
         },
         validationSchema,
-        onSubmit: (values) => {
-            console.log("Product Form Submitted:", values);
-            setSnackbarSeverity("success");
-            setSnackbarMessage("Product created successfully!");
-            setSnackbarOpen(true);
-            dispatch(createProduct({request:values, jwt:localStorage.getItem("jwt") || ""}));
+        onSubmit: async (values, { resetForm }) => {
+            const mrp = Number(values.mrpPrice);
+            const discount = Number(values.discountPercent) || 0;
+            const finalSellingPrice = Math.round(mrp - (mrp * discount) / 100);
 
+            const payload = {
+                title: values.title,
+                description: values.description,
+                mrpPrice: mrp,
+                discountPercent: discount,
+                sellingPrice: finalSellingPrice,
+                color: values.color,
+                sizes: values.sizes,
+                images: values.images,
+                category: values.category,
+                category2: values.category2,
+                category3: values.category3,
+            };
+
+            const jwt = localStorage.getItem("jwt") || "";
+            try {
+                await dispatch(createProduct({ request: payload, jwt })).unwrap();
+                setSnackbarSeverity("success");
+                setSnackbarMessage("Product created successfully!");
+                setSnackbarOpen(true);
+                resetForm();
+            } catch (err: any) {
+                setSnackbarSeverity("error");
+                setSnackbarMessage(typeof err === "string" ? err : "Failed to create product");
+                setSnackbarOpen(true);
+            }
         },
     });
 
@@ -120,10 +134,9 @@ const AddProduct = () => {
             if (uploadedUrl) {
                 formik.setFieldValue("images", [...formik.values.images, uploadedUrl]);
             }
-        } catch (error) {
-            console.error("Image upload failed:", error);
+        } catch (error: any) {
             setSnackbarSeverity("error");
-            setSnackbarMessage("Failed to upload image.");
+            setSnackbarMessage(error.message || "Failed to upload image. Please check your Cloudinary configuration.");
             setSnackbarOpen(true);
         } finally {
             setUploadingImage(false);
@@ -145,8 +158,14 @@ const AddProduct = () => {
         return categories.filter((child) => child.parentCategoryId === parentCategoryId);
     };
 
+    const mrp = Number(formik.values.mrpPrice) || 0;
+    const discount = Number(formik.values.discountPercent) || 0;
+    const calculatedFinalPrice = mrp > 0 ? Math.round(mrp - (mrp * discount) / 100) : 0;
+
     return (
         <div className="p-4 lg:p-10 max-w-7xl mx-auto">
+            <h1 className="text-2xl font-bold text-gray-800 mb-6">Add New Product</h1>
+
             <form onSubmit={formik.handleSubmit}>
                 <Grid container spacing={2}>
                     {/* Image Upload Gallery */}
@@ -158,26 +177,24 @@ const AddProduct = () => {
                             style={{ display: "none" }}
                             onChange={handleImageChange}
                         />
-
                         <label htmlFor="fileInput">
-                            <div className="relative">
-                                <span className="w-24 h-24 cursor-pointer flex items-center justify-center p-3 border rounded-md border-gray-400 hover:border-teal-600 transition">
-                                    <AddPhotoAlternateIcon className="text-gray-500" fontSize="large" />
-                                </span>
-                                {uploadingImage && (
-                                    <div className="absolute top-0 left-0 right-0 bottom-0 w-24 h-24 flex items-center justify-center bg-white/70 rounded-md">
-                                        <CircularProgress size={28} />
-                                    </div>
-                                )}
-                            </div>
+                            <span className="w-24 h-24 cursor-pointer flex items-center justify-center p-3 border-2 border-dashed rounded-md border-gray-400 hover:border-teal-600 transition-colors">
+                                <AddPhotoAlternateIcon className="text-gray-500 hover:text-teal-600 text-3xl" />
+                            </span>
                         </label>
 
+                        {uploadingImage && (
+                            <div className="w-24 h-24 flex items-center justify-center border rounded-md">
+                                <CircularProgress size={28} />
+                            </div>
+                        )}
+
                         {formik.values.images.map((image, index) => (
-                            <div className="relative group" key={index}>
+                            <div key={index} className="relative group">
                                 <img
                                     className="w-24 h-24 object-cover rounded-md border border-gray-200"
                                     src={image}
-                                    alt={`Product ${index + 1}`}
+                                    alt={`Product preview ${index + 1}`}
                                 />
                                 <IconButton
                                     onClick={() => handleRemoveImage(index)}
@@ -185,10 +202,9 @@ const AddProduct = () => {
                                     color="error"
                                     sx={{
                                         position: "absolute",
-                                        top: 0,
-                                        right: 0,
-                                        outline: "none",
-                                        backgroundColor: "rgba(255, 255, 255, 0.8)",
+                                        top: 2,
+                                        right: 2,
+                                        backgroundColor: "rgba(255, 255, 255, 0.9)",
                                         "&:hover": { backgroundColor: "#fff" },
                                     }}
                                 >
@@ -238,7 +254,7 @@ const AddProduct = () => {
                             fullWidth
                             id="mrpPrice"
                             name="mrpPrice"
-                            label="MRP Price"
+                            label="MRP Price (₹)"
                             type="number"
                             required
                             value={formik.values.mrpPrice}
@@ -249,20 +265,28 @@ const AddProduct = () => {
                         />
                     </Grid>
 
-                    {/* Selling Price */}
+                    {/* Discount (%) */}
                     <Grid size={{ xs: 12, md: 4, lg: 3 }}>
                         <TextField
                             fullWidth
-                            id="sellingPrice"
-                            name="sellingPrice"
-                            label="Selling Price"
+                            id="discountPercent"
+                            name="discountPercent"
+                            label="Discount (%)"
                             type="number"
                             required
-                            value={formik.values.sellingPrice}
+                            slotProps={{
+                                input: {
+                                    endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                                },
+                            }}
+                            value={formik.values.discountPercent}
                             onChange={formik.handleChange}
                             onBlur={formik.handleBlur}
-                            error={formik.touched.sellingPrice && Boolean(formik.errors.sellingPrice)}
-                            helperText={formik.touched.sellingPrice && formik.errors.sellingPrice}
+                            error={formik.touched.discountPercent && Boolean(formik.errors.discountPercent)}
+                            helperText={
+                                (formik.touched.discountPercent && formik.errors.discountPercent) ||
+                                (mrp > 0 ? `Final Price: ₹${calculatedFinalPrice}` : "")
+                            }
                         />
                     </Grid>
 
@@ -322,10 +346,10 @@ const AddProduct = () => {
                                 onBlur={formik.handleBlur}
                             >
                                 <MenuItem value="">
-                                    <em>Select Size</em>
+                                    <em>Select Sizes</em>
                                 </MenuItem>
-                                {sizesList.map((size, index) => (
-                                    <MenuItem key={index} value={size}>
+                                {sizesList.map((size) => (
+                                    <MenuItem value={size} key={size}>
                                         {size}
                                     </MenuItem>
                                 ))}
@@ -360,9 +384,9 @@ const AddProduct = () => {
                                 <MenuItem value="">
                                     <em>Select Category</em>
                                 </MenuItem>
-                                {mainCategory.map((cat, index) => (
-                                    <MenuItem key={index} value={cat.categoryId}>
-                                        {cat.name}
+                                {mainCategory.map((item) => (
+                                    <MenuItem value={item.categoryId} key={item.categoryId}>
+                                        {item.name}
                                     </MenuItem>
                                 ))}
                             </Select>
@@ -378,6 +402,7 @@ const AddProduct = () => {
                             fullWidth
                             error={formik.touched.category2 && Boolean(formik.errors.category2)}
                             required
+                            disabled={!formik.values.category}
                         >
                             <InputLabel id="category2-label">Second Category</InputLabel>
                             <Select
@@ -395,11 +420,12 @@ const AddProduct = () => {
                                 <MenuItem value="">
                                     <em>Select Second Category</em>
                                 </MenuItem>
-                                {(categoryTwoMap[formik.values.category] || []).map((cat, index) => (
-                                    <MenuItem key={index} value={cat.categoryId}>
-                                        {cat.name}
-                                    </MenuItem>
-                                ))}
+                                {formik.values.category &&
+                                    categoryTwoMap[formik.values.category]?.map((item) => (
+                                        <MenuItem value={item.categoryId} key={item.categoryId}>
+                                            {item.name}
+                                        </MenuItem>
+                                    ))}
                             </Select>
                             {formik.touched.category2 && formik.errors.category2 && (
                                 <FormHelperText>{formik.errors.category2}</FormHelperText>
@@ -413,6 +439,7 @@ const AddProduct = () => {
                             fullWidth
                             error={formik.touched.category3 && Boolean(formik.errors.category3)}
                             required
+                            disabled={!formik.values.category2}
                         >
                             <InputLabel id="category3-label">Third Category</InputLabel>
                             <Select
@@ -427,14 +454,15 @@ const AddProduct = () => {
                                 <MenuItem value="">
                                     <em>Select Third Category</em>
                                 </MenuItem>
-                                {childCategory(
-                                    categoryThreeMap[formik.values.category] || [],
-                                    formik.values.category2
-                                ).map((cat, index) => (
-                                    <MenuItem key={index} value={cat.categoryId}>
-                                        {cat.name}
-                                    </MenuItem>
-                                ))}
+                                {formik.values.category2 &&
+                                    childCategory(
+                                        categoryThreeMap[formik.values.category] || [],
+                                        formik.values.category2
+                                    ).map((item: any) => (
+                                        <MenuItem value={item.categoryId} key={item.categoryId}>
+                                            {item.name}
+                                        </MenuItem>
+                                    ))}
                             </Select>
                             {formik.touched.category3 && formik.errors.category3 && (
                                 <FormHelperText>{formik.errors.category3}</FormHelperText>
@@ -443,15 +471,19 @@ const AddProduct = () => {
                     </Grid>
 
                     {/* Submit Button */}
-                    <Grid size={{ xs: 12, md: 4, lg: 4 }}>
+                    <Grid size={{ xs: 12 }} className="pt-4">
                         <Button
-                            sx={{ p: "14px" }}
-                            color="primary"
-                            variant="contained"
+                            sx={{
+                                p: "12px",
+                                backgroundColor: "#00897b",
+                                "&:hover": { backgroundColor: "#00695c" },
+                            }}
                             fullWidth
                             type="submit"
+                            variant="contained"
+                            disabled={formik.isSubmitting}
                         >
-                            ADD PRODUCT
+                            {formik.isSubmitting ? <CircularProgress size={24} color="inherit" /> : "ADD PRODUCT"}
                         </Button>
                     </Grid>
                 </Grid>
@@ -459,7 +491,7 @@ const AddProduct = () => {
 
             <Snackbar
                 open={snackbarOpen}
-                autoHideDuration={4000}
+                autoHideDuration={5000}
                 onClose={handleCloseSnackbar}
                 anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
             >

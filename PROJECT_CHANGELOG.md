@@ -2,13 +2,54 @@
 
 ## Project Summary
 - **Project**: Black Mason E-Commerce (React + Vite + Redux Toolkit + Spring Boot)
-- **Last Updated**: 2026-10-25 17:38 IST
-- **Status**: Active Development — Checkout & AddressForm aligned with tutorial screenshots
+- **Last Updated**: 2026-11-04 15:40 IST
+- **Status**: Active Development — Product Table Alignment, Discount % Architecture, Seller Update/Delete Modal, and Security Cleanup
 
 ---
 
 ## Completed Milestones & Features
 
+- [x] **Customer Category Hierarchy & Filter Pipeline Fix**:
+  - Diagnosed and resolved the root cause of "No Products Found" on `/products/:category` (e.g. `/products/men`, `/products/men_sneakers`).
+  - Corrected `ProductSlice.ts` to call `/products` instead of the root `/` URL, and sanitized empty strings, nulls, and undefined query params before sending.
+  - Updated [`Product.tsx`](file:///c:/Work/Projects/Black%20Mason/Frontend/src/customer/pages/Product/Product.tsx) Sort select to eliminate the MUI out-of-range undefined console error.
+  - Confirmed backend JPA specification matches category hierarchy across levels 1, 2, and 3.
+- [x] **Professional Seller Edit Product Details Redesign**:
+  - Overhauled "Edit Product Details" modal in [`ProductTable.tsx`](file:///c:/Work/Projects/Black%20Mason/Frontend/src/seller/pages/Products/ProductTable.tsx) with a modern marketplace merchant UX.
+  - Implemented Formik + Yup validation, live pricing card with savings calculation, multi-select size chips, Cloudinary thumbnail gallery with primary star badge, in-stock toggle, and a safe two-step delete confirmation dialog.
+  - Added real-time table search by title/category.
+- [x] **Token Segregation & Seller Route Guard**:
+  - Segregated authentication tokens into `seller_jwt` and `customer_jwt` across [`Api.ts`](file:///c:/Work/Projects/Black%20Mason/Frontend/src/config/Api.ts), [`AuthSlice.ts`](file:///c:/Work/Projects/Black%20Mason/Frontend/src/State/AuthSlice.ts), and [`sellerAuthSlice.ts`](file:///c:/Work/Projects/Black%20Mason/Frontend/src/State/seller/sellerAuthSlice.ts), enabling concurrent customer and seller sessions without collisions.
+  - Created [`SellerRoute.tsx`](file:///c:/Work/Projects/Black%20Mason/Frontend/src/Routes/SellerRoute.tsx) route guard protecting `/seller/*` endpoints.
+  - Added dynamic navbar toggle in [`Navbar.tsx`](file:///c:/Work/Projects/Black%20Mason/Frontend/src/customer/components/Navbar/Navbar.tsx) switching "BECOME SELLER" to "SELLER DASHBOARD" when logged in.
+- [x] **Seller Product Table & Alignment Overhaul**:
+  - Aligned all column headers and data cells in [`ProductTable.tsx`](file:///c:/Work/Projects/Black%20Mason/Frontend/src/seller/pages/Products/ProductTable.tsx) with consistent widths and text alignments.
+  - Added a readable **Category** badge column.
+  - Replaced the old "Selling" column with a **Discount** badge (e.g. `20% OFF`) along with the computed Final Price.
+  - Added fallback placeholder images for missing/broken product pictures.
+  - Connected the edit (pencil) icon to open an interactive edit modal pre-filled with the product details.
+  - Added "Save Changes" and a distinct "Delete Product" button with a confirmation dialog and toast feedback.
+- [x] **Discount % Schema & Backend Pricing Calculation**:
+  - Updated Add Product and Product Edit forms to accept **Discount (%)** instead of raw selling price with validation (0% to 100%).
+  - Configured backend [`ProductServiceImpl.java`](file:///c:/Work/Projects/Black%20Mason/ecomm/ecomm/src/main/java/com/priyanshu/service/impl/ProductServiceImpl.java) to compute and store `sellingPrice` directly from MRP and discount percent, ensuring trusted server-side math.
+- [x] **Secure Update & Delete Seller Product API**:
+  - Implemented `PUT /sellers/products/{id}` and `DELETE /sellers/products/{id}` in [`SellerProductController.java`](file:///c:/Work/Projects/Black%20Mason/ecomm/ecomm/src/main/java/com/priyanshu/controller/SellerProductController.java) with ownership verification (returns 403 Forbidden if the product does not belong to the logged-in seller, and 404 Not Found if missing).
+- [x] **Console Errors & Security Cleanup**:
+  - Handled missing/invalid JWT tokens in `GET /sellers/profile` with clean 401/404 HTTP status responses instead of 500.
+  - Migrated Cloudinary credentials in [`UploadToCloudinary.tsx`](file:///c:/Work/Projects/Black%20Mason/Frontend/src/Util/UploadToCloudinary.tsx) to `.env` variables (`VITE_CLOUDINARY_CLOUD_NAME`, `VITE_CLOUDINARY_UPLOAD_PRESET`).
+  - Removed sensitive `console.log` statements printing OTPs, passwords, and form bodies across authentication and seller modules.
+- [x] **Home Page Images & Deduplication**:
+  - Replaced broken Flipkart/Myntra hotlinked URLs in [`HomeCategories.ts`](file:///c:/Work/Projects/Black%20Mason/Frontend/src/data/HomeCategories.ts) with high-definition, reliable Unsplash CDN images across Electric Categories, Grid, and Shop By Categories.
+  - Implemented automatic deduplication in [`ElectricCategory.tsx`](file:///c:/Work/Projects/Black%20Mason/Frontend/src/customer/pages/Home/ElectricCategory/ElectricCategory.tsx) and [`ShopByCategory.tsx`](file:///c:/Work/Projects/Black%20Mason/Frontend/src/customer/pages/Home/ShopByCategory/ShopByCategory.tsx) so duplicated items stored in the DB do not appear twice.
+  - Added robust image fallback (`onError`) in [`ElectricCategoryCard.tsx`](file:///c:/Work/Projects/Black%20Mason/Frontend/src/customer/pages/Home/ElectricCategory/ElectricCategoryCard.tsx) and [`ShopByCategoryCard.tsx`](file:///c:/Work/Projects/Black%20Mason/Frontend/src/customer/pages/Home/ShopByCategory/ShopByCategoryCard.tsx).
+  - Synchronized database category images via the backend `/admin/home-category/{id}` endpoint.
+- [x] **Navbar Navigation & Category Sheet Links**:
+  - Wired main navbar category links (`Men`, `Women`, `Home & Furniture`, `Electronics`) to navigate to `/products/:category` in [`Navbar.tsx`](file:///c:/Work/Projects/Black%20Mason/Frontend/src/customer/components/Navbar/Navbar.tsx).
+  - Wired all level 2 and level 3 category dropdown items in [`CategorySheet.tsx`](file:///c:/Work/Projects/Black%20Mason/Frontend/src/customer/components/Navbar/CategorySheet.tsx) to navigate directly to their respective category pages and auto-close the dropdown.
+- [x] **Product Listing Empty State & Multi-level Category Search**:
+  - Enhanced [`Product.tsx`](file:///c:/Work/Projects/Black%20Mason/Frontend/src/customer/pages/Product/Product.tsx) with a loading spinner, formatted dynamic title, and an empty state banner ("No Products Found" with an "Explore Other Products" CTA) when a category has no products.
+  - Updated backend [`ProductServiceImpl.java`](file:///c:/Work/Projects/Black%20Mason/ecomm/ecomm/src/main/java/com/priyanshu/service/impl/ProductServiceImpl.java) specification to search across level 3, parent (level 2), and grand-parent (level 1) categories seamlessly.
+- [x] **Cloudinary Configuration Fix**: Updated Cloud Name to `ut39wtdq` and configured unsigned upload preset `ecommerce_project` for product image uploads.
 - [x] **Checkout & AddressForm Props & Dispatch Alignment**: Aligned [`AddressForm.tsx`](file:///home/gurmeetgsk/Downloads/NEW%20FOLDER/NEW%20PROJECT/Ecomm/Frontend/src/customer/pages/Checkout/AddressForm.tsx) to accept `paymentGateway` cleanly with `localStorage.getItem("jwt") || ""` in `dispatch(createOrder({ address: values, jwt, paymentGateway }))`, matching exact tutorial video screenshots.
 - [x] **Cart Type System & State Management**: Created [`cartTypes.ts`](file:///home/gurmeetgsk/Downloads/NEW%20FOLDER/NEW%20PROJECT/Ecomm/Frontend/src/types/cartTypes.ts) and [`cartSlice.ts`](file:///home/gurmeetgsk/Downloads/NEW%20FOLDER/NEW%20PROJECT/Ecomm/Frontend/src/State/customer/cartSlice.ts) with full CRUD thunks (`fetchUserCart`, `addItemToCart`, `deleteCartItem`, `updateCartItem`).
 - [x] **Price & Discount Utilities**: Created [`sumCartItemMrpPrice.ts`](file:///home/gurmeetgsk/Downloads/NEW%20FOLDER/NEW%20PROJECT/Ecomm/Frontend/src/Util/sumCartItemMrpPrice.ts) calculating total MRP and selling price dynamically.

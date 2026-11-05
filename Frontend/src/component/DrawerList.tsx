@@ -2,6 +2,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Divider, ListItemIcon, ListItemText } from '@mui/material';
 import { useAppDispatch } from '../State/Store';
 import { logout } from '../State/AuthSlice';
+import { resetSellerState } from '../State/seller/sellerSlice';
+import { sellerLogout } from '../State/seller/sellerAuthSlice';
 
 interface menuItem {
     name: string;
@@ -22,6 +24,8 @@ const DrawerList = ({ menu, menu2, toggleDrawer }: DrawerListProp) => {
     const dispatch = useAppDispatch();
 
     const handleLogout = () => {
+        dispatch(resetSellerState());
+        dispatch(sellerLogout());
         dispatch(logout(navigate));
     };
     const handleClick = (path: string) => {

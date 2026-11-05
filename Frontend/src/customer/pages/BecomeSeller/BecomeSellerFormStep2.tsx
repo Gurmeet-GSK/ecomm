@@ -29,16 +29,16 @@ const BecomeSellerFormStep2: React.FC<BecomeSellerFormStep2Props> = ({ formik })
 
             <TextField
                 fullWidth
-                name="mobile"
+                name="pickupMobile"
                 placeholder="Mobile"
-                value={formik.values.mobile}
+                value={formik.values.pickupMobile}
                 onChange={(e) => {
                     const onlyDigits = e.target.value.replace(/\D/g, "");
-                    formik.setFieldValue("mobile", onlyDigits.slice(0, 10));
+                    formik.setFieldValue("pickupMobile", onlyDigits.slice(0, 10));
                 }}
                 onBlur={formik.handleBlur}
-                error={formik.touched.mobile && Boolean(formik.errors.mobile)}
-                helperText={formik.touched.mobile && formik.errors.mobile}
+                error={formik.touched.pickupMobile && Boolean(formik.errors.pickupMobile)}
+                helperText={formik.touched.pickupMobile && formik.errors.pickupMobile}
                 slotProps={{
                     htmlInput: { maxLength: 10, inputMode: "numeric" },
                 }}

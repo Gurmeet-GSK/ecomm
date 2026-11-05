@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { menLevelTwo } from "../../../data/category/levelTwo/menLevelTwo";
 import { womenLevelTwo } from "../../../data/category/levelTwo/womenLevelTwo";
 import { electronicsLevelTwo } from "../../../data/category/levelTwo/electronicsLevelTwo";
@@ -31,11 +32,18 @@ const categoryThree: Record<string, CategoryItem[]> = {
 
 type Props = { 
   selectedCategory: string; // "men", "women", "electronics" or "home_furniture"
+  onClose?: () => void;
 };
 
-const CategorySheet = ({ selectedCategory }: Props) => {
+const CategorySheet = ({ selectedCategory, onClose }: Props) => {
+  const navigate = useNavigate();
   const headings = categoryTwo[selectedCategory] ?? [];
   const items = categoryThree[selectedCategory] ?? [];
+
+  const handleCategoryClick = (categoryId: string) => {
+    if (onClose) onClose();
+    navigate(`/products/${categoryId}`);
+  };
 
   return (
     <div className="grid grid-cols-5">
@@ -45,7 +53,10 @@ const CategorySheet = ({ selectedCategory }: Props) => {
           // alternate shaded and white columns
           className={`px-6 py-6 ${index % 2 === 0 ? "bg-slate-50" : "bg-white"}`}
         >
-          <h3 className="mb-4 text-sm font-semibold text-[#00897b]">
+          <h3
+            onClick={() => handleCategoryClick(heading.categoryId)}
+            className="mb-4 text-sm font-semibold text-[#00897b] cursor-pointer hover:underline"
+          >
             {heading.name}
           </h3>
 
@@ -55,6 +66,7 @@ const CategorySheet = ({ selectedCategory }: Props) => {
               .map((item) => (
                 <li
                   key={item.categoryId}
+                  onClick={() => handleCategoryClick(item.categoryId)}
                   className="cursor-pointer text-sm text-gray-600 transition-colors hover:text-[#00897b]"
                 >
                   {item.name}

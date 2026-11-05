@@ -35,13 +35,13 @@ const BecomeSellerFromStep3: React.FC<BecomeSellerFromStep3Props> = ({ formik })
 
             <TextField
                 fullWidth
-                name="ifsCode"
+                name="ifscCode"
                 placeholder="IFSC Code"
-                value={formik.values.ifsCode}
-                onChange={(e) => formik.setFieldValue("ifsCode", e.target.value.toUpperCase())}
+                value={formik.values.ifscCode}
+                onChange={(e) => formik.setFieldValue("ifscCode", e.target.value.toUpperCase())}
                 onBlur={formik.handleBlur}
-                error={formik.touched.ifsCode && Boolean(formik.errors.ifsCode)}
-                helperText={formik.touched.ifsCode && formik.errors.ifsCode}
+                error={formik.touched.ifscCode && Boolean(formik.errors.ifscCode)}
+                helperText={formik.touched.ifscCode && formik.errors.ifscCode}
                 slotProps={{
                     htmlInput: { maxLength: 11, style: { textTransform: "uppercase" } },
                 }}
