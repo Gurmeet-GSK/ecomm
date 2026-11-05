@@ -9,6 +9,9 @@
 
 ## Completed Milestones & Features
 
+- [x] **Git Repository & Remote Push**:
+  - Initialized git tracking and configured remote `git@github.com:Gurmeet-GSK/ecomm.git`.
+  - Pushed all frontend, backend, configuration, and documentation updates directly to branch `main` on GitHub: [`https://github.com/Gurmeet-GSK/ecomm`](https://github.com/Gurmeet-GSK/ecomm).
 - [x] **Customer Category Hierarchy & Filter Pipeline Fix**:
   - Diagnosed and resolved the root cause of "No Products Found" on `/products/:category` (e.g. `/products/men`, `/products/men_sneakers`).
   - Corrected `ProductSlice.ts` to call `/products` instead of the root `/` URL, and sanitized empty strings, nulls, and undefined query params before sending.
